@@ -23,3 +23,16 @@
       throw std::runtime_error("CURAND GAME OVER!");                           \
     }                                                                          \
   } while (0)
+
+#define CUBLAS_STATUS_CALL(x)                                                  \
+  do {                                                                         \
+    if ((x) != CUBLAS_STATUS_SUCCESS) {                                        \
+      printf("Error at %s:%d\n", __FILE__, __LINE__);                          \
+      throw std::runtime_error("CUBLAS GAME OVER!");                           \
+    }                                                                          \
+  } while (0)
+
+template <class T> void print(const T &t) {
+  cudaDeviceSynchronize();
+  std::cout << t << std::endl;
+}

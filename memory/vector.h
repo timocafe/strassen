@@ -36,6 +36,7 @@ public:
   typedef T value_type;
   typedef value_type *pointer;
   typedef pointer iterator;
+  typedef const pointer const_iterator;
   typedef value_type &reference;
   typedef const value_type &const_reference;
 
@@ -45,19 +46,61 @@ public:
   ///
   explicit vector(size_type n = 0, const value_type &v = value_type())
       : data_(nullptr), size_(n), shared_(false) {
-    CUDA_CALL(cudaMallocManaged(&data_, n * sizeof(value_type)));
-    std::fill(begin(), end(), v);
+    if (n > 0) {
+      CUDA_CALL(cudaMallocManaged(&data_, n * sizeof(value_type)));
+      cudaDeviceSynchronize(); // specific jetson
+      std::fill(begin(), end(), v);
+    }
+  }
+
+  ///
+  /// \brief initializer constructor {1.,2. ...} col order !
+  ///
+  vector(std::initializer_list<value_type> l) {
+    *this = std::move(vector(l.size(), 0));
+    std::copy(l.begin(), l.end(), data_);
   }
 
   ///
   /// \brief Specific copy constructor for the GPU. Provide the value to the
-  /// GPU,
-  ///        using unify memory the GPU will be able to reach the memory
+  /// GPU, using unify memory the GPU will be able to reach the memory
   ///
   vector(const policy_shared &p, const vector &other) {
     data_ = other.data_;
     size_ = other.size_;
     shared_ = true;
+  }
+
+  ///
+  /// \brief copy constructor
+  ///
+  vector(const vector &other) : size_(other.size_), shared_(false) {
+    CUDA_CALL(cudaMallocManaged(&data_, size_ * sizeof(value_type)));
+    cudaDeviceSynchronize(); // specific jetson
+    std::copy(other.begin(), other.end(), begin());
+  }
+
+  ///
+  /// \brief move constructor
+  ///
+  vector(vector &&other)
+      : data_(std::move(other.data_)), size_(std::move(other.size_)),
+        shared_(std::move(other.shared_)) {
+    other.data_ = nullptr;
+    other.size_ = 0;
+    other.shared_ = true;
+  }
+
+  ///
+  /// \brief assigm move operator
+  /// GPU,
+  ///        using unify memory the GPU will be able to reach the memory
+  ///
+  vector &operator=(vector &&other) {
+    std::swap(data_, other.data_);
+    std::swap(size_, other.size_);
+    std::swap(shared_, other.shared_);
+    return *this;
   }
 
   ///
@@ -77,10 +120,63 @@ public:
   }
 
   ///
+  /// \brief Addition between two vectors
+  ///
+  vector &operator+=(const vector &v) {
+    assert(size() == v.size() &&
+           " can not make addition between vector of different size ");
+    cublasHandle_t handle;
+    CUBLAS_STATUS_CALL(cublasCreate(&handle));
+    int n = size();
+    const float alpha = 1.f;
+    int incx(1);
+    int incy(1);
+
+    const float *x = v.data();
+    float *y = data();
+    // y = alpha * x + y
+    cublasSaxpy(handle, n, &alpha, x, incx, y, incy);
+    CUBLAS_STATUS_CALL(cublasDestroy(handle));
+    return *this;
+  }
+
+  ///
+  /// \brief substraction between two vectors
+  ///
+  vector &operator-=(const vector &v) {
+    assert(size() == v.size() &&
+           " can not make substraction between vector of different size ");
+    cublasHandle_t handle;
+    CUBLAS_STATUS_CALL(cublasCreate(&handle));
+    int n = size();
+    const float alpha = -1.f;
+    const float *x = v.data();
+    float *y = data();
+    int incx(1);
+    int incy(1);
+    // y = alpha * x + y
+    cublasSaxpy(handle, n, &alpha, x, incx, y, incy);
+    CUBLAS_STATUS_CALL(cublasDestroy(handle));
+    return *this;
+  }
+
+  ///
   /// \brief Return an iterator at the beginning of the vector
   ///
   DEVICE_CALLABLE
   iterator begin() { return data_; }
+
+  ///
+  /// \brief Return an iterator at the end of the vector
+  ///
+  DEVICE_CALLABLE
+  const_iterator end() const { return data_ + size_; }
+
+  ///
+  /// \brief Return an iterator at the beginning of the vector
+  ///
+  DEVICE_CALLABLE
+  const_iterator begin() const { return data_; }
 
   ///
   /// \brief Return an iterator at the end of the vector
