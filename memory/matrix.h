@@ -145,6 +145,8 @@ std::ostream &operator<<(std::ostream &out, const matrix<T> &b) {
 template <class T>
 inline void copy_block(matrix<T> &m1, const matrix<T> &m2, uint32_t x,
                        uint32_t y) {
+  m1.prefetch_cpu();
+  m2.prefetch_cpu();
   using eigen_vector_type =
       Eigen::Matrix<T, Eigen::Dynamic, 1, Eigen::ColMajor>;
   using const_eigen_vector_type =
@@ -154,6 +156,23 @@ inline void copy_block(matrix<T> &m1, const matrix<T> &m2, uint32_t x,
   for (int i = 0; i < m1.cols(); ++i) {
     Eigen::Map<eigen_vector_type>(m1.data() + i * size, size) =
         Eigen::Map<const_eigen_vector_type>((&m2(x, y) + i * size_m2), size);
+  }
+}
+
+template <class T>
+inline void copy_matrix(matrix<T> &m1, const matrix<T> &m2, uint32_t x,
+                        uint32_t y) {
+  m1.prefetch_cpu();
+  m2.prefetch_cpu();
+  using eigen_vector_type =
+      Eigen::Matrix<T, Eigen::Dynamic, 1, Eigen::ColMajor>;
+  using const_eigen_vector_type =
+      const Eigen::Matrix<T, Eigen::Dynamic, 1, Eigen::ColMajor>;
+  const uint32_t size = m2.rows();
+  const uint32_t size_m2 = 2 * m2.rows();
+  for (int i = 0; i < m2.cols(); ++i) {
+    Eigen::Map<eigen_vector_type>((&m1(x, y) + i * size_m2), size) =
+        Eigen::Map<const_eigen_vector_type>(m2.data() + i * size, size);
   }
 }
 

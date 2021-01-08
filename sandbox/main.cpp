@@ -10,17 +10,36 @@
 #include <chrono>
 #include <iostream>
 
+#include "algo/strassen.h"
 #include "memory/matrix.h"
 #include "memory/vector.h"
 
 int main(int argc, char *argv[]) {
-  matrix<float> m1(2, 2);
-  m1 = {1., 2., 3., 4.};
-
-  matrix<float> m2(2, 2);
-  m2 = {2., 3., 4., 5.};
-
-  matrix<float> m3(2, 2);
-  m3 = m1 * m2;
-  // mul_matrix_cpu(m3, m1, m2);
+  int size = std::atoi(argv[1]);
+  int bls = std::atoi(argv[2]);
+  matrix<float> A(size, size);
+  matrix<float> B(size, size);
+  matrix<float> C(size, size);
+  random(A);
+  random(B);
+ /* 
+  {
+    auto start = std::chrono::system_clock::now();
+    C = A * B;
+    auto end = std::chrono::system_clock::now();
+    auto elapsed =
+        std::chrono::duration<float, std::chrono::seconds::period>(end - start);
+    std::cout << " time to solution Classical: " << elapsed.count()
+              << std::endl;
+  }
+*/
+  {
+    auto start = std::chrono::system_clock::now();
+    C = strassen(A, B, bls);
+    auto end = std::chrono::system_clock::now();
+    auto elapsed =
+        std::chrono::duration<float, std::chrono::seconds::period>(end - start);
+    std::cout << " time to solution Strassen: " << elapsed.count() << std::endl;
+  }
+ 
 }
