@@ -8,8 +8,6 @@
 
 #pragma once
 
-#include <cuda.h>
-
 #include <cassert>
 #include <iostream>
 
@@ -17,6 +15,10 @@
 
 // policy for the specific copy constructor
 struct policy_shared {};
+
+// using eigen_matrix_type =
+//    Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic,
+//    Eigen::ColMajor>;
 
 #define DEVICE_CALLABLE __host__ __device__
 
@@ -88,7 +90,7 @@ public:
         shared_(std::move(other.shared_)) {
     other.data_ = nullptr;
     other.size_ = 0;
-    other.shared_ = true;
+    other.shared_ = false;
   }
 
   ///
@@ -125,18 +127,10 @@ public:
   vector &operator+=(const vector &v) {
     assert(size() == v.size() &&
            " can not make addition between vector of different size ");
-    cublasHandle_t handle;
-    CUBLAS_STATUS_CALL(cublasCreate(&handle));
-    int n = size();
-    const float alpha = 1.f;
-    int incx(1);
-    int incy(1);
-
-    const float *x = v.data();
-    float *y = data();
-    // y = alpha * x + y
-    cublasSaxpy(handle, n, &alpha, x, incx, y, incy);
-    CUBLAS_STATUS_CALL(cublasDestroy(handle));
+    if (gpu_ready_.fetch_sub(1))
+      add_vector_gpu(*this, v);
+    else
+      add_vector_cpu(*this, v);
     return *this;
   }
 
@@ -146,17 +140,10 @@ public:
   vector &operator-=(const vector &v) {
     assert(size() == v.size() &&
            " can not make substraction between vector of different size ");
-    cublasHandle_t handle;
-    CUBLAS_STATUS_CALL(cublasCreate(&handle));
-    int n = size();
-    const float alpha = -1.f;
-    const float *x = v.data();
-    float *y = data();
-    int incx(1);
-    int incy(1);
-    // y = alpha * x + y
-    cublasSaxpy(handle, n, &alpha, x, incx, y, incy);
-    CUBLAS_STATUS_CALL(cublasDestroy(handle));
+    if (gpu_ready_.fetch_sub(1))
+      sub_vector_gpu(*this, v);
+    else
+      sub_vector_cpu(*this, v);
     return *this;
   }
 
@@ -249,6 +236,63 @@ private:
   pointer data_;   // pointer of the data
   bool shared_;    // only use for GPU to provide arument to cuda kernel
 };
+
+///
+/// \brief Addition Substraction between two vectors on GPU
+///
+template <class T>
+void helper_add(vector<T> &v_y, const vector<T> &v_x, const float a) {
+  cublasHandle_t handle;
+  CUBLAS_STATUS_CALL(cublasCreate(&handle));
+  int n = v_y.size();
+  const float alpha = a;
+  int incx(1);
+  int incy(1);
+  const float *x = v_x.data();
+  float *y = v_y.data();
+  // y = alpha * x + y
+  cublasSaxpy(handle, n, &alpha, x, incx, y, incy);
+  CUBLAS_STATUS_CALL(cublasDestroy(handle));
+  gpu_ready_.fetch_add(1);
+}
+
+///
+/// \brief Addition between two vectors on GPU
+///
+template <class T>
+inline void add_vector_gpu(vector<T> &v_y, const vector<T> &v_x) {
+  helper_add(v_y, v_x, 1.f);
+}
+
+///
+/// \brief Substraction between two vectors on GPU
+///
+template <class T>
+inline void sub_vector_gpu(vector<T> &v_y, const vector<T> &v_x) {
+  helper_add(v_y, v_x, -1.f);
+}
+
+///
+/// \brief Addition between two vectors on CPU
+///
+template <class T>
+inline void add_vector_cpu(vector<T> &v_y, const vector<T> &v_x) {
+  using eigen_vector_type =
+      Eigen::Matrix<T, Eigen::Dynamic, 1, Eigen::ColMajor>;
+  Eigen::Map<eigen_vector_type>(v_y.data(), v_y.size()) +=
+      Eigen::Map<eigen_vector_type>(v_x.data(), v_x.size());
+}
+
+///
+/// \brief Substraction between two vectors on CPU
+///
+template <class T>
+inline void sub_vector_cpu(vector<T> &v_y, const vector<T> &v_x) {
+  using eigen_vector_type =
+      Eigen::Matrix<T, Eigen::Dynamic, 1, Eigen::ColMajor>;
+  Eigen::Map<eigen_vector_type>(v_y.data(), v_y.size()) -=
+      Eigen::Map<eigen_vector_type>(v_x.data(), v_x.size());
+}
 
 ///
 /// \brief Overload << stream operator

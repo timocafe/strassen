@@ -14,9 +14,6 @@
 #include "memory/util.h"
 #include "memory/vector.h"
 
-struct cpu {};
-struct gpu {};
-
 // matrix col order to be compliant with BLAS else ...
 template <class T> class matrix {
 public:
@@ -30,7 +27,7 @@ public:
   /// \brief usual constructor
   /// The device first divice is selected only once the memory is initialized
   ///
-  explicit matrix(const size_type rows = 1, const size_type cols = 1)
+  explicit matrix(const size_type rows = 0, const size_type cols = 0)
       : rows_(rows), cols_(cols), data_(rows * cols) {}
 
   ///
@@ -145,6 +142,21 @@ std::ostream &operator<<(std::ostream &out, const matrix<T> &b) {
   return out;
 }
 
+template <class T>
+inline void copy_block(matrix<T> &m1, const matrix<T> &m2, uint32_t x,
+                       uint32_t y) {
+  using eigen_vector_type =
+      Eigen::Matrix<T, Eigen::Dynamic, 1, Eigen::ColMajor>;
+  using const_eigen_vector_type =
+      const Eigen::Matrix<T, Eigen::Dynamic, 1, Eigen::ColMajor>;
+  const uint32_t size = m1.rows();
+  const uint32_t size_m2 = 2 * m1.rows();
+  for (int i = 0; i < m1.cols(); ++i) {
+    Eigen::Map<eigen_vector_type>(m1.data() + i * size, size) =
+        Eigen::Map<const_eigen_vector_type>((&m2(x, y) + i * size_m2), size);
+  }
+}
+
 template <class T> void random(matrix<T> &m) {
   m.prefetch_gpu();
   curandGenerator_t gen;
@@ -159,19 +171,10 @@ template <class T> void random(matrix<T> &m) {
   m.prefetch_cpu();
 }
 
-template <class T> inline auto operator*(const matrix<T> &, const matrix<T> &);
-
-template <class T> inline auto operator+(const matrix<T> &, const matrix<T> &);
-
-template <class T> inline auto operator-(const matrix<T> &, const matrix<T> &);
-
-// BLAS notation ...
-template <> auto operator*(const matrix<float> &mA, const matrix<float> &mB) {
-  using size_type = typename matrix<float>::size_type;
-  size_type rows = mA.rows();
-  size_type cols = mB.cols();
-  matrix<float> mC(rows, cols);
-
+template <class T>
+inline void mul_matrix_gpu(matrix<T> &mC, const matrix<T> &mA,
+                           const matrix<T> &mB) {
+  using size_type = typename matrix<T>::size_type;
   cublasHandle_t handle;
   CUBLAS_STATUS_CALL(cublasCreate(&handle));
 
@@ -196,16 +199,43 @@ template <> auto operator*(const matrix<float> &mA, const matrix<float> &mB) {
   CUBLAS_STATUS_CALL(cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, k,
                                  &alpha, A, lda, B, ldb, &beta, C, ldc));
   CUBLAS_STATUS_CALL(cublasDestroy(handle));
+  gpu_ready_.fetch_add(1);
+}
+
+template <class T>
+inline void mul_matrix_cpu(matrix<T> &mC, const matrix<T> &mA,
+                           const matrix<T> &mB) {
+  using value_type = T;
+  using eigen_matrix_type = Eigen::Matrix<value_type, Eigen::Dynamic,
+                                          Eigen::Dynamic, Eigen::ColMajor>;
+  Eigen::Map<eigen_matrix_type>(mC.data(), mC.rows(), mC.cols()) =
+      Eigen::Map<eigen_matrix_type>(mA.data(), mB.rows(), mC.cols()) *
+      Eigen::Map<eigen_matrix_type>(mB.data(), mB.rows(), mC.cols());
+}
+
+template <class T>
+inline auto operator*(const matrix<T> &mA, const matrix<T> &mB) {
+  using size_type = typename matrix<float>::size_type;
+  size_type rows = mA.rows();
+  size_type cols = mB.cols();
+  matrix<float> mC(rows, cols);
+  if (gpu_ready_.fetch_sub(1))
+    mul_matrix_gpu(mC, mA, mB);
+  else
+    mul_matrix_cpu(mC, mA, mB);
+
   return std::move(mC);
 }
 
-template <> auto operator+(const matrix<float> &mA, const matrix<float> &mB) {
+template <class T>
+inline auto operator+(const matrix<T> &mA, const matrix<T> &mB) {
   matrix<float> m(mA); // copy constructor
   m += mB;
   return std::move(m);
 }
 
-template <> auto operator-(const matrix<float> &mA, const matrix<float> &mB) {
+template <class T>
+inline auto operator-(const matrix<T> &mA, const matrix<T> &mB) {
   matrix<float> m(mA); // copy constructor
   m -= mB;
   return std::move(m);

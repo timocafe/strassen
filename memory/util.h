@@ -8,6 +8,13 @@
 
 #pragma once
 
+#include <Eigen/Dense>
+#include <cublas_v2.h>
+#include <cuda.h>
+#include <curand.h>
+
+#include <atomic>
+
 #define CUDA_CALL(x)                                                           \
   do {                                                                         \
     if ((x) != cudaSuccess) {                                                  \
@@ -36,3 +43,5 @@ template <class T> void print(const T &t) {
   cudaDeviceSynchronize();
   std::cout << t << std::endl;
 }
+
+static std::atomic<int> gpu_ready_(1);

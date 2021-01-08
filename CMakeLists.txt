@@ -16,10 +16,18 @@ find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 
 include(ClangFormat)
 clangformat_setup(
-  sandbox/main.cu
+  sandbox/main.cpp
   memory/vector.h
   memory/matrix.h
   memory/util.h
+  test/test_memory_vector.cpp
+  test/test_memory_matrix.cpp
 )
 
 add_subdirectory(sandbox)
+
+# Locate GTest
+find_package(GTest REQUIRED)
+add_subdirectory(test)
+
+
