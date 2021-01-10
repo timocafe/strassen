@@ -19,10 +19,12 @@ clangformat_setup(
   sandbox/main.cpp
   memory/vector.h
   memory/matrix.h
+  memory/tile_matrix.h
   memory/util.h
   algo/strassen.h
   test/test_memory_vector.cpp
   test/test_memory_matrix.cpp
+  test/test_memory_tile_matrix.cpp
 )
 
 add_subdirectory(sandbox)
