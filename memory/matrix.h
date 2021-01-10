@@ -128,7 +128,7 @@ public:
   void prefetch_cpu(cudaStream_t s = 0) const { data_.prefetch_cpu(s); }
 
   ///
-  /// \brief Addition between two vectors
+  /// \brief Addition between two matrix
   ///
   matrix &operator+=(const matrix &m) {
     data_ += m.data_;
@@ -136,7 +136,7 @@ public:
   }
 
   ///
-  /// \brief Substraction between two vectors
+  /// \brief Substraction between two matrix
   ///
   matrix &operator-=(const matrix &m) {
     data_ -= m.data_;

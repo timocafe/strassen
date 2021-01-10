@@ -117,12 +117,32 @@ public:
   ///
   /// \brief Return the vector of tile
   ///
-  std::vector<matrix<value_type>> &data() const { return data_; }
+  const std::vector<matrix<value_type>> &data() const { return data_; }
 
   ///
   /// \brief Return the vector of tile
   ///
   std::vector<matrix<value_type>> &data() { return data_; }
+
+  ///
+  /// \brief Addition between two tile_matrix
+  ///
+  tile_matrix &operator+=(const tile_matrix &m) {
+    // much simpler than std::transform
+    for (int i = 0; i < data_.size(); ++i)
+      data_[i] += m.data()[i];
+    return *this;
+  }
+
+  ///
+  /// \brief Substraction between two vectors
+  ///
+  tile_matrix &operator-=(const tile_matrix &m) {
+    // much simpler than std::transform
+    for (int i = 0; i < data_.size(); ++i)
+      data_[i] -= m.data()[i];
+    return *this;
+  }
 
   ///
   /// \brief Print the tile matrix
