@@ -31,6 +31,34 @@ public:
       : rows_(rows), cols_(cols), data_(rows * cols) {}
 
   ///
+  /// \brief copy constructor, needed because following standard as soons as
+  /// move assign or move copy is coded the copy destructor is marked deleted
+  ///
+  matrix(const matrix &other)
+      : data_(other.data_), rows_(other.rows()), cols_(other.cols()) {}
+
+  ///
+  /// \brief move constructor, the automatic does not reset rows_ and cols_ to 0
+  /// (no swap)
+  ///
+  matrix(matrix &&other)
+      : data_(std::move(other.data_)), rows_(std::move(other.rows_)),
+        cols_(std::move(other.cols_)) {
+    other.rows_ = 0;
+    other.cols_ = 0;
+  }
+
+  ///
+  /// \brief assign move operator, needed because move constructor
+  ///
+  matrix &operator=(matrix &&other) {
+    std::swap(data_, other.data_);
+    std::swap(cols_, other.cols_);
+    std::swap(rows_, other.rows_);
+    return *this;
+  }
+
+  ///
   /// \brief initializer constructor {1.,2. ...} col order !
   ///
   matrix &operator=(std::initializer_list<value_type> l) {
@@ -116,7 +144,7 @@ public:
   }
 
   ///
-  /// \brief Print the vector
+  /// \brief Print the matrix
   ///
   void print(std::ostream &out) const {
     for (int i = 0; i < rows(); ++i) {

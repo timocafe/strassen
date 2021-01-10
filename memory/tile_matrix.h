@@ -8,6 +8,9 @@
 
 #pragma once
 
+#include <random>
+#include <vector>
+
 #include "memory/matrix.h"
 #include "memory/util.h"
 #include "memory/vector.h"
@@ -83,9 +86,55 @@ public:
   }
 
   ///
+  /// \brief return the needed tile
+  ///
+  inline matrix<value_type> &tile(size_type i, size_type j) {
+    // get the tile
+    size_type ti = i / tile_;
+    size_type tj = j / tile_;
+    assert(ti < tile_rows_ && " i < tile_rows ");
+    assert(tj < tile_cols_ && " i < tile_cols ");
+    return data_[ti + tj * tile_rows_];
+  }
+
+  ///
+  /// \brief return the needed tile
+  ///
+  inline const matrix<value_type> &tile(size_type i, size_type j) const {
+    // get the tile
+    size_type ti = i / tile_;
+    size_type tj = j / tile_;
+    assert(ti < tile_rows && " i < tile_rows ");
+    assert(tj < tile_cols && " i < tile_cols ");
+    return data_[ti + tj * tile_rows];
+  }
+
+  ///
   /// \brief Return the total number of element
   ///
   size_type size() const { return data_.size(); }
+
+  ///
+  /// \brief Return the vector of tile
+  ///
+  std::vector<matrix<value_type>> &data() const { return data_; }
+
+  ///
+  /// \brief Return the vector of tile
+  ///
+  std::vector<matrix<value_type>> &data() { return data_; }
+
+  ///
+  /// \brief Print the tile matrix
+  ///
+  void print(std::ostream &out) const {
+    for (int i = 0; i < rows(); ++i) {
+      for (int j = 0; j < cols(); ++j)
+        out << (*this)(i, j) << " ";
+      out << "\n";
+    }
+    out << "\n";
+  }
 
 private:
   size_type rows_;
@@ -95,3 +144,18 @@ private:
   size_type tile_;
   std::vector<matrix<value_type>> data_;
 };
+
+///
+/// \brief Overload << stream operator
+///
+template <class T>
+std::ostream &operator<<(std::ostream &out, const tile_matrix<T> &b) {
+  b.print(out);
+  return out;
+}
+
+template <class T> void random(tile_matrix<T> &m) {
+  auto &data = m.data();
+  std::for_each(std::begin(data), std::end(data),
+                [&](auto &it) { return random(it); });
+}
