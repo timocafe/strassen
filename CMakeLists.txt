@@ -20,6 +20,7 @@ clangformat_setup(
   memory/vector.h
   memory/matrix.h
   memory/util.h
+  algo/strassen.h
   test/test_memory_vector.cpp
   test/test_memory_matrix.cpp
 )

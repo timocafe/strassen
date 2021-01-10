@@ -17,8 +17,8 @@
 template<class T>
 auto strassen(const matrix<T>& A, const matrix<T>& B, const uint32_t lbs = 64){
      const uint32_t n = A.rows();
-     const uint32_t k = A.rows()/2; // limit blocksize
-     if(lbs == n)
+     const uint32_t k = A.rows()/2;
+     if(lbs == n) // limit blocksize 
          return std::move(A*B);
 
      matrix<T> A11(k,k); 
@@ -46,18 +46,13 @@ auto strassen(const matrix<T>& A, const matrix<T>& B, const uint32_t lbs = 64){
      const auto& M3 = strassen(A11, B12 - B22);
      const auto& M4 = strassen(A22, B21 - B11);
      const auto& M5 = strassen(A11 +  A12, B22);
-     const auto& M6 = strassen(A21 +  A11, B11 +  B12);
+     const auto& M6 = strassen(A21 -  A11, B11 +  B12);
      const auto& M7 = strassen(A12 -  A22, B21 + B22);
 
-     matrix<T> C11(k,k); 
-     matrix<T> C12(k,k); 
-     matrix<T> C21(k,k); 
-     matrix<T> C22(k,k); 
-
-     C11 = M1 + M4 - M5 + M7;
-     C12 = M3 + M5;
-     C21 = M2 + M4;
-     C22 = M1 - M2 + M3 + M5;
+     const auto& C11 = M1 + M4 - M5 + M7;
+     const auto& C12 = M3 + M5;
+     const auto& C21 = M2 + M4;
+     const auto& C22 = M1 - M2 + M3 + M6;
 
      matrix<T> C(n,n);
 

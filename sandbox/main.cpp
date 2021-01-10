@@ -41,5 +41,7 @@ int main(int argc, char *argv[]) {
         std::chrono::duration<float, std::chrono::seconds::period>(end - start);
     std::cout << " time to solution Strassen: " << elapsed.count() << std::endl;
   }
+
+
  
 }
