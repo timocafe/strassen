@@ -99,10 +99,14 @@ public:
   ///
   pointer data() { return data_.data(); }
 
+  void data(pointer p) { data_.data(p); }
+
   ///
   /// \brief Return the total number of element
   ///
   size_type size() const { return data_.size(); }
+
+  void size(size_type s) { data_.size(s); }
 
   ///
   /// \brief Return a reference of the data using usual bracket operator syntax,
@@ -277,10 +281,10 @@ inline auto operator*(const matrix<T> &mA, const matrix<T> &mB) {
   size_type rows = mA.rows();
   size_type cols = mB.cols();
   matrix<float> mC(rows, cols);
-  if (gpu_ready_.fetch_sub(1))
-    mul_matrix_gpu(mC, mA, mB);
-  else
-    mul_matrix_cpu(mC, mA, mB);
+  // if (gpu_ready_.fetch_sub(1))
+  //  mul_matrix_gpu(mC, mA, mB);
+  // else
+  mul_matrix_cpu(mC, mA, mB);
 
   return std::move(mC);
 }

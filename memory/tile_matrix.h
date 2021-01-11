@@ -111,6 +111,11 @@ public:
   size_type size() const { return data_.size(); }
 
   ///
+  /// \brief Return the total number of element
+  ///
+  size_type tile() const { return tile_; }
+
+  ///
   /// \brief Return the vector of tile
   ///
   const std::vector<matrix<value_type>> &data() const { return data_; }
@@ -179,28 +184,56 @@ template <class T> void random(tile_matrix<T> &m) {
                 [&](auto &it) { return random(it); });
 }
 
+template <class T>
+inline auto operator+(const tile_matrix<T> &mA, const tile_matrix<T> &mB) {
+  tile_matrix<float> m(mA); // copy constructor
+  m += mB;
+  return std::move(m);
+}
+
+template <class T>
+inline auto operator-(const tile_matrix<T> &mA, const tile_matrix<T> &mB) {
+  tile_matrix<float> m(mA); // copy constructor
+  m -= mB;
+  return std::move(m);
+}
+
+template <class T>
+inline auto mul(const tile_matrix<T> &mA, const tile_matrix<T> &mB) {
+  tile_matrix<float> m(mA.rows(), mA.cols(), mA.tile(), 0);
+  m.tile(0, 0) = std::move(mA.tile(0, 0) * mB.tile(0, 0));
+  return std::move(m);
+}
+
 ///
 /// \brief copy block from a matrix to an other one
 ///
 template <class T>
-inline void copy_block(tile_matrix<T> &m1, tile_matrix<T> &m2, uint32_t x,
+inline void copy_block(tile_matrix<T> &m1, const tile_matrix<T> &m2, uint32_t x,
                        uint32_t y) {
-  uint32_t nrows = m2.tile_rows() / 2;
-  uint32_t ncols = m2.tile_cols() / 2;
+  uint32_t nrows = (m2.tile_rows() == 1) ? 1 : m2.tile_rows() / 2;
+  uint32_t ncols = (m2.tile_cols() == 1) ? 1 : m2.tile_cols() / 2;
   for (int i = 0; i < ncols; ++i)
-    for (int j = 0; j < nrows; ++j)
-      std::swap(m1.tile(i, j), m2.tile(i + x, j + y));
+    for (int j = 0; j < nrows; ++j) {
+      m1.tile(i, j) = m2.tile(i + x, j + y);
+      //    m1.tile(i, j).data(m2.tile(i + x, j + y).data());
+      //    m1.tile(i, j).size(m2.tile(i + x, j + y).size());
+    }
 }
 
 ///
-/// \brief copy aifull matrix to an other one subblock
+/// \brief copyasuefull matrix to an other one subblock
+/// It just copy adress and block size
 ///
 template <class T>
-inline void copy_matrix(tile_matrix<T> &m1, tile_matrix<T> &m2, uint32_t x,
-                        uint32_t y) {
+inline void copy_matrix(tile_matrix<T> &m1, const tile_matrix<T> &m2,
+                        uint32_t x, uint32_t y) {
   uint32_t nrows = m2.tile_rows();
   uint32_t ncols = m2.tile_cols();
   for (int i = 0; i < ncols; ++i)
-    for (int j = 0; j < nrows; ++j)
-      std::swap(m1.tile(i + x, j + y), m2.tile(i, j));
+    for (int j = 0; j < nrows; ++j) {
+      m1.tile(i + x, j + y) = m2.tile(i, j);
+      //    m1.tile(i + x, j + y).data(m2.tile(i, j).data());
+      //    m1.tile(i + x, j + y).size(m2.tile(i, j).size());
+    }
 }
