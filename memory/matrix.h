@@ -27,8 +27,9 @@ public:
   /// \brief usual constructor
   /// The device first divice is selected only once the memory is initialized
   ///
-  explicit matrix(const size_type rows = 0, const size_type cols = 0)
-      : rows_(rows), cols_(cols), data_(rows * cols) {}
+  explicit matrix(const size_type rows = 0, const size_type cols = 0,
+                  const size_type init = 1)
+      : rows_(rows), cols_(cols), data_(rows * cols * init) {}
 
   ///
   /// \brief copy constructor, needed because following standard as soons as
@@ -55,6 +56,16 @@ public:
     std::swap(data_, other.data_);
     std::swap(cols_, other.cols_);
     std::swap(rows_, other.rows_);
+    return *this;
+  }
+
+  ///
+  /// \brief assign operator
+  ///
+  matrix &operator=(const matrix &other) {
+    cols_ = other.cols_;
+    rows_ = other.rows_;
+    data_ = other.data_;
     return *this;
   }
 

@@ -29,10 +29,10 @@ public:
   /// compurte the number of tile needed
   ///
   explicit tile_matrix(const size_type rows = 0, const size_type cols = 0,
-                       const size_type tile = 64)
+                       const size_type tile = 64, const size_type init = 1)
       : rows_(rows), cols_(cols), tile_rows_((rows + tile - 1) / tile),
         tile_cols_((rows + tile - 1) / tile), tile_(tile),
-        data_(tile_rows_ * tile_cols_, matrix<value_type>(tile, tile)){};
+        data_(tile_rows_ * tile_cols_, matrix<value_type>(tile, tile, init)){};
 
   ///
   /// \brief Return the number of cols
@@ -90,11 +90,9 @@ public:
   ///
   inline matrix<value_type> &tile(size_type i, size_type j) {
     // get the tile
-    size_type ti = i / tile_;
-    size_type tj = j / tile_;
-    assert(ti < tile_rows_ && " i < tile_rows ");
-    assert(tj < tile_cols_ && " i < tile_cols ");
-    return data_[ti + tj * tile_rows_];
+    assert(i < tile_rows_ && " i < tile_rows ");
+    assert(j < tile_cols_ && " i < tile_cols ");
+    return data_[i + j * tile_rows_];
   }
 
   ///
@@ -102,11 +100,9 @@ public:
   ///
   inline const matrix<value_type> &tile(size_type i, size_type j) const {
     // get the tile
-    size_type ti = i / tile_;
-    size_type tj = j / tile_;
-    assert(ti < tile_rows && " i < tile_rows ");
-    assert(tj < tile_cols && " i < tile_cols ");
-    return data_[ti + tj * tile_rows];
+    assert(i < tile_rows_ && " i < tile_rows ");
+    assert(j < tile_cols_ && " i < tile_cols ");
+    return data_[i + j * tile_rows_];
   }
 
   ///
@@ -174,8 +170,37 @@ std::ostream &operator<<(std::ostream &out, const tile_matrix<T> &b) {
   return out;
 }
 
+///
+/// \brief fill up the matrix with random number
+///
 template <class T> void random(tile_matrix<T> &m) {
   auto &data = m.data();
   std::for_each(std::begin(data), std::end(data),
                 [&](auto &it) { return random(it); });
+}
+
+///
+/// \brief copy block from a matrix to an other one
+///
+template <class T>
+inline void copy_block(tile_matrix<T> &m1, tile_matrix<T> &m2, uint32_t x,
+                       uint32_t y) {
+  uint32_t nrows = m2.tile_rows() / 2;
+  uint32_t ncols = m2.tile_cols() / 2;
+  for (int i = 0; i < ncols; ++i)
+    for (int j = 0; j < nrows; ++j)
+      std::swap(m1.tile(i, j), m2.tile(i + x, j + y));
+}
+
+///
+/// \brief copy aifull matrix to an other one subblock
+///
+template <class T>
+inline void copy_matrix(tile_matrix<T> &m1, tile_matrix<T> &m2, uint32_t x,
+                        uint32_t y) {
+  uint32_t nrows = m2.tile_rows();
+  uint32_t ncols = m2.tile_cols();
+  for (int i = 0; i < ncols; ++i)
+    for (int j = 0; j < nrows; ++j)
+      std::swap(m1.tile(i + x, j + y), m2.tile(i, j));
 }

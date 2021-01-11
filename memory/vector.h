@@ -76,10 +76,13 @@ public:
   ///
   /// \brief copy constructor
   ///
-  vector(const vector &other) : size_(other.size_), shared_(false) {
-    CUDA_CALL(cudaMallocManaged(&data_, size_ * sizeof(value_type)));
-    cudaDeviceSynchronize(); // specific jetson
-    std::copy(other.begin(), other.end(), begin());
+  vector(const vector &other)
+      : data_(nullptr), size_(other.size_), shared_(false) {
+    if (other.data_ != nullptr) {
+      CUDA_CALL(cudaMallocManaged(&data_, size_ * sizeof(value_type)));
+      cudaDeviceSynchronize(); // specific jetson
+      std::copy(other.begin(), other.end(), begin());
+    }
   }
 
   ///
@@ -102,6 +105,17 @@ public:
     std::swap(data_, other.data_);
     std::swap(size_, other.size_);
     std::swap(shared_, other.shared_);
+    return *this;
+  }
+
+  ///
+  /// \brief assigm move operator
+  /// GPU,
+  ///        using unify memory the GPU will be able to reach the memory
+  ///
+  vector &operator=(const vector &other) {
+    vector v(other);
+    *this = std::move(v);
     return *this;
   }
 
