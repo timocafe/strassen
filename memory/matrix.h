@@ -251,24 +251,12 @@ template <class T> void random_gpu(matrix<T> &m) {
 template <class T> void random_cpu(matrix<T> &m) {
   std::random_device rnd_device;
   std::mt19937 mersenne_engine{rnd_device()}; // Generates random integers
-  std::uniform_int_distribution<float> dist{0, 1};
+  std::uniform_real_distribution<float> dist{0, 1};
   auto gen = [&dist, &mersenne_engine]() { return dist(mersenne_engine); };
   std::generate(m.begin(), m.end(), gen);
 }
 
 #ifdef CUDA_STRASSEN
-template <class T> void random_gpu(matrix<T> &m) {
-  curandGenerator_t gen;
-  /* Create pseudo-random number generator */
-  CURAND_CALL(curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT));
-  /* Set seed */
-  CURAND_CALL(curandSetPseudoRandomGeneratorSeed(gen, 1234ULL));
-  /* Generate n floats on device */
-  CURAND_CALL(curandGenerateUniform(gen, m.data(), m.size()));
-  /* Cleanup */
-  CURAND_CALL(curandDestroyGenerator(gen));
-  m.prefetch_cpu();
-}
 
 template <class T>
 inline void mul_matrix_gpu(matrix<T> &mC, const matrix<T> &mA,
