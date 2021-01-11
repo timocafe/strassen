@@ -20,8 +20,6 @@ struct policy_shared {};
 //    Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic,
 //    Eigen::ColMajor>;
 
-#define DEVICE_CALLABLE __host__ __device__
-
 ///
 /// \brief vector can be used on CPU and GPU.
 /// and stl.
@@ -29,7 +27,6 @@ struct policy_shared {};
 ///        memory policy. The Cuda kernel should be called using the following
 ///        syntax
 ///        my_kernel<<<blocks,threads>>>({policy_shared(),my_vector});
-/// \note  DEVICE_CALLABLE indicate the functions is usuable on the GPU and CPU
 ///
 template <class T> class vector {
 
@@ -49,8 +46,12 @@ public:
   explicit vector(size_type n = 0, const value_type &v = value_type())
       : data_(nullptr), size_(n), shared_(false) {
     if (n > 0) {
+#ifdef CUDA_STRASSEN
       CUDA_CALL(cudaMallocManaged(&data_, n * sizeof(value_type)));
       cudaDeviceSynchronize(); // specific jetson
+#else
+      data_ = new value_type[n];
+#endif
       std::fill(begin(), end(), v);
     }
   }
@@ -59,7 +60,17 @@ public:
   /// \brief initializer constructor {1.,2. ...} col order !
   ///
   vector(std::initializer_list<value_type> l) {
-    *this = std::move(vector(l.size(), 0));
+    int n = l.size();
+    size_ = n;
+    shared_ = false;
+    if (n > 0) {
+#ifdef CUDA_STRASSEN
+      CUDA_CALL(cudaMallocManaged(&data_, n * sizeof(value_type)));
+      cudaDeviceSynchronize(); // specific jetson
+#else
+      data_ = new value_type[n];
+#endif
+    }
     std::copy(l.begin(), l.end(), data_);
   }
 
@@ -79,8 +90,12 @@ public:
   vector(const vector &other)
       : data_(nullptr), size_(other.size_), shared_(false) {
     if (other.data_ != nullptr) {
+#ifdef CUDA_STRASSEN
       CUDA_CALL(cudaMallocManaged(&data_, size_ * sizeof(value_type)));
       cudaDeviceSynchronize(); // specific jetson
+#else
+      data_ = new value_type[size_];
+#endif
       std::copy(other.begin(), other.end(), begin());
     }
   }
@@ -97,7 +112,7 @@ public:
   }
 
   ///
-  /// \brief assigm move operator
+  /// \brief assign move operator
   /// GPU,
   ///        using unify memory the GPU will be able to reach the memory
   ///
@@ -128,7 +143,12 @@ public:
   ~vector() {
     if (!shared_) {
       if (data_ != nullptr) {
+
+#ifdef CUDA_STRASSEN
         cudaFree(data_);
+#else
+        delete[] data_;
+#endif
         size_ = 0;
         data_ = nullptr;
       }
@@ -141,10 +161,12 @@ public:
   vector &operator+=(const vector &v) {
     assert(size() == v.size() &&
            " can not make addition between vector of different size ");
-    //  if (gpu_ready_.fetch_sub(1))
-    //    add_vector_gpu(*this, v);
-    //  else
-    add_vector_cpu(*this, v);
+#ifdef CUDA_STRASSEN
+    if (gpu_ready_.fetch_sub(1))
+      add_vector_gpu(*this, v);
+    else
+#endif
+      add_vector_cpu(*this, v);
     return *this;
   }
 
@@ -154,47 +176,43 @@ public:
   vector &operator-=(const vector &v) {
     assert(size() == v.size() &&
            " can not make substraction between vector of different size ");
-    //  if (gpu_ready_.fetch_sub(1))
-    //    sub_vector_gpu(*this, v);
-    //  else
-    sub_vector_cpu(*this, v);
+#ifdef CUDA_STRASSEN
+    if (gpu_ready_.fetch_sub(1))
+      sub_vector_gpu(*this, v);
+    else
+#endif
+      sub_vector_cpu(*this, v);
     return *this;
   }
 
   ///
   /// \brief Return an iterator at the beginning of the vector
   ///
-  DEVICE_CALLABLE
   iterator begin() { return data_; }
 
   ///
   /// \brief Return an iterator at the end of the vector
   ///
-  DEVICE_CALLABLE
   const_iterator end() const { return data_ + size_; }
 
   ///
   /// \brief Return an iterator at the beginning of the vector
   ///
-  DEVICE_CALLABLE
   const_iterator begin() const { return data_; }
 
   ///
   /// \brief Return an iterator at the end of the vector
   ///
-  DEVICE_CALLABLE
   iterator end() { return data_ + size_; }
 
   ///
   /// \brief Return the size of the vector
   ///
-  DEVICE_CALLABLE
   inline size_type size() const { return size_; }
 
   ///
   /// \brief Return a reference of the data using usual bracket operator syntax
   ///
-  DEVICE_CALLABLE
   inline reference operator[](size_type i) {
     assert(i < size_ && " Too ambitious! \n");
     return data_[i];
@@ -204,7 +222,6 @@ public:
   /// \brief Return a cosnt reference of the data using usual bracket operator
   /// syntax
   ///
-  DEVICE_CALLABLE
   inline const_reference operator[](size_type i) const {
     assert(i < size_ && " Too ambitious! \n");
     return data_[i];
@@ -229,10 +246,6 @@ public:
   ///
   pointer data() { return data_; }
 
-  inline void size(size_type s) { size_ = s; }
-
-  inline void shared(bool b) { shared_ = true; }
-
   ///
   /// \brief set up the pointer directly need for copy block/matrix
   ///
@@ -242,7 +255,7 @@ public:
   /// \brief Return the memory allocated
   ///
   size_type memory_allocated() const { return sizeof(T) * size_; }
-
+#ifdef CUDA_STRASSEN
   ///
   //
   /// \brief Prefetch data on the gpu
@@ -258,13 +271,13 @@ public:
   void prefetch_cpu(cudaStream_t s = 0) const {
     cudaMemPrefetchAsync(data(), memory_allocated(), cudaCpuDeviceId, s);
   }
-
+#endif
 private:
   size_type size_; // size of the vector
   pointer data_;   // pointer of the data
   bool shared_;    // only use for GPU to provide arument to cuda kernel
 };
-
+#ifdef CUDA_STRASSEN
 ///
 /// \brief Addition Substraction between two vectors on GPU
 ///
@@ -299,7 +312,7 @@ template <class T>
 inline void sub_vector_gpu(vector<T> &v_y, const vector<T> &v_x) {
   helper_add(v_y, v_x, -1.f);
 }
-
+#endif
 ///
 /// \brief Addition between two vectors on CPU
 ///

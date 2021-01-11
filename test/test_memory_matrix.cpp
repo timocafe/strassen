@@ -72,7 +72,7 @@ TEST(AlgebraTestMatrix, MultiplicationGPU) {
 
   matrix<float> m3(2, 2);
 
-  mul_matrix_gpu(m3, m1, m2);
+  m3 = m1 * m2;
 
   ASSERT_FLOAT_EQ(m3(0, 0), 11.f);
   ASSERT_FLOAT_EQ(m3(1, 0), 16.f);

@@ -9,6 +9,9 @@
 #pragma once
 
 #include <Eigen/Dense>
+
+#ifdef CUDA_STRASSEN
+
 #include <cublas_v2.h>
 #include <cuda.h>
 #include <curand.h>
@@ -39,9 +42,7 @@
     }                                                                          \
   } while (0)
 
-template <class T> void print(const T &t) {
-  cudaDeviceSynchronize();
-  std::cout << t << std::endl;
-}
+#endif
+template <class T> void print(const T &t) { std::cout << t << std::endl; }
 
 static std::atomic<int> gpu_ready_(1);

@@ -59,7 +59,7 @@ public:
   /// cols order, first get the tile and then the data (col order) for the
   /// corresponding tile
   ///
-  DEVICE_CALLABLE
+
   inline reference operator()(size_type i, size_type j) {
     // get the tile
     size_type ti = i / tile_;
@@ -74,7 +74,7 @@ public:
   /// \brief Return a const reference of the data using usual bracket operator,
   /// cols order syntax
   ///
-  DEVICE_CALLABLE
+
   inline const_reference operator()(size_type i, size_type j) const {
     // get the tile
     size_type ti = i / tile_;

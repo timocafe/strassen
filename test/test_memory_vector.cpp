@@ -49,16 +49,9 @@ TEST(AlgebraTestVector, AdditionGPU) {
   {
     vector<float> v = {1., 2.};
     vector<float> w = {2., 3.};
-    add_vector_gpu(v, w);
+    v += w;
     ASSERT_FLOAT_EQ(v[0], 3.f);
     ASSERT_FLOAT_EQ(v[1], 5.f);
-  }
-  {
-    vector<float> v = {1., 2.};
-    vector<float> w = {2., 3.};
-    sub_vector_gpu(v, w);
-    ASSERT_FLOAT_EQ(v[0], -1.f);
-    ASSERT_FLOAT_EQ(v[1], -1.f);
   }
 }
 

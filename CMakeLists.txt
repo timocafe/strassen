@@ -11,6 +11,7 @@ include_directories(${PROJECT_SOURCE_DIR})
 option (CUDA_STRASSEN " using unify memory CUDA" OFF)
 
 if(CUDA_STRASSEN)
+add_definitions(-DCUDA_STRASSEN)
 find_package(CUDA QUIET REQUIRED)
 include_directories(${CUDA_TOOLKIT_INCLUDE})
 set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};--fmad=true;--default-stream per-thread;-std=c++14;--expt-relaxed-constexpr)
@@ -35,6 +36,7 @@ clangformat_setup(
 add_subdirectory(sandbox)
 
 # Locate GTest
+enable_testing()
 find_package(GTest REQUIRED)
 add_subdirectory(test)
 

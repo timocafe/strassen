@@ -8,8 +8,12 @@
 
 #pragma once
 
+#ifdef CUDA_STRASSEN
 #include <cublas_v2.h>
 #include <curand.h>
+#endif
+
+#include <random>
 
 #include "memory/util.h"
 #include "memory/vector.h"
@@ -21,6 +25,7 @@ public:
   typedef T value_type;
   typedef value_type *pointer;
   typedef pointer iterator;
+  typedef const pointer const_iterator;
   typedef value_type &reference;
   typedef const value_type &const_reference;
   ///
@@ -78,6 +83,15 @@ public:
     data_ = std::move(vector<value_type>(l));
     return *this;
   }
+  ///
+  /// \brief Return an iterator at the beginning of the vector
+  ///
+  iterator begin() { return data_.begin(); }
+
+  ///
+  /// \brief Return an iterator at the end of the vector
+  ///
+  const_iterator end() const { return data_.begin(); }
 
   ///
   /// \brief Return the number of cols
@@ -99,20 +113,15 @@ public:
   ///
   pointer data() { return data_.data(); }
 
-  void data(pointer p) { data_.data(p); }
-
   ///
   /// \brief Return the total number of element
   ///
   size_type size() const { return data_.size(); }
 
-  void size(size_type s) { data_.size(s); }
-
   ///
   /// \brief Return a reference of the data using usual bracket operator syntax,
   /// cols order
   ///
-  DEVICE_CALLABLE
   inline reference operator()(size_type i, size_type j) {
     return data_[i + j * rows_];
   }
@@ -121,7 +130,6 @@ public:
   /// \brief Return a const reference of the data using usual bracket operator,
   /// cols order syntax
   ///
-  DEVICE_CALLABLE
   inline const_reference operator()(size_type i, size_type j) const {
     return data_[i + j * rows_];
   }
@@ -131,8 +139,8 @@ public:
   ///
   size_type memory_allocated() const { return data_.memory_allocated(); }
 
+#ifdef CUDA_STRASSEN
   ///
-  //
   /// \brief Prefetch data on the gpu
   ///
   void prefetch_gpu(cudaStream_t s = 0) const { data_.prefetch_gpu(s); }
@@ -141,7 +149,7 @@ public:
   /// \brief Prefetch data on the cpu
   ///
   void prefetch_cpu(cudaStream_t s = 0) const { data_.prefetch_cpu(s); }
-
+#endif
   ///
   /// \brief Addition between two matrix
   ///
@@ -188,8 +196,7 @@ std::ostream &operator<<(std::ostream &out, const matrix<T> &b) {
 template <class T>
 inline void copy_block(matrix<T> &m1, const matrix<T> &m2, uint32_t x,
                        uint32_t y) {
-  m1.prefetch_cpu();
-  m2.prefetch_cpu();
+
   using eigen_vector_type =
       Eigen::Matrix<T, Eigen::Dynamic, 1, Eigen::ColMajor>;
   using const_eigen_vector_type =
@@ -205,8 +212,7 @@ inline void copy_block(matrix<T> &m1, const matrix<T> &m2, uint32_t x,
 template <class T>
 inline void copy_matrix(matrix<T> &m1, const matrix<T> &m2, uint32_t x,
                         uint32_t y) {
-  m1.prefetch_cpu();
-  m2.prefetch_cpu();
+
   using eigen_vector_type =
       Eigen::Matrix<T, Eigen::Dynamic, 1, Eigen::ColMajor>;
   using const_eigen_vector_type =
@@ -220,7 +226,38 @@ inline void copy_matrix(matrix<T> &m1, const matrix<T> &m2, uint32_t x,
 }
 
 template <class T> void random(matrix<T> &m) {
-  m.prefetch_gpu();
+#ifdef CUDA_STRASSEN
+  if (gpu_ready_.fetch_sub(1))
+    random_gpu(m);
+  else
+#endif
+    random_cpu(m);
+}
+#ifdef CUDA_STRASSEN
+template <class T> void random_gpu(matrix<T> &m) {
+  curandGenerator_t gen;
+  /* Create pseudo-random number generator */
+  CURAND_CALL(curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT));
+  /* Set seed */
+  CURAND_CALL(curandSetPseudoRandomGeneratorSeed(gen, 1234ULL));
+  /* Generate n floats on device */
+  CURAND_CALL(curandGenerateUniform(gen, m.data(), m.size()));
+  /* Cleanup */
+  CURAND_CALL(curandDestroyGenerator(gen));
+  gpu_ready_.fetch_add(1);
+}
+#endif
+
+template <class T> void random_cpu(matrix<T> &m) {
+  std::random_device rnd_device;
+  std::mt19937 mersenne_engine{rnd_device()}; // Generates random integers
+  std::uniform_int_distribution<float> dist{0, 1};
+  auto gen = [&dist, &mersenne_engine]() { return dist(mersenne_engine); };
+  std::generate(m.begin(), m.end(), gen);
+}
+
+#ifdef CUDA_STRASSEN
+template <class T> void random_gpu(matrix<T> &m) {
   curandGenerator_t gen;
   /* Create pseudo-random number generator */
   CURAND_CALL(curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT));
@@ -263,6 +300,7 @@ inline void mul_matrix_gpu(matrix<T> &mC, const matrix<T> &mA,
   CUBLAS_STATUS_CALL(cublasDestroy(handle));
   gpu_ready_.fetch_add(1);
 }
+#endif
 
 template <class T>
 inline void mul_matrix_cpu(matrix<T> &mC, const matrix<T> &mA,
@@ -281,10 +319,12 @@ inline auto operator*(const matrix<T> &mA, const matrix<T> &mB) {
   size_type rows = mA.rows();
   size_type cols = mB.cols();
   matrix<float> mC(rows, cols);
-  // if (gpu_ready_.fetch_sub(1))
-  //  mul_matrix_gpu(mC, mA, mB);
-  // else
-  mul_matrix_cpu(mC, mA, mB);
+#ifdef CUDA_STRASSEN
+  if (gpu_ready_.fetch_sub(1))
+    mul_matrix_gpu(mC, mA, mB);
+  else
+#endif
+    mul_matrix_cpu(mC, mA, mB);
 
   return std::move(mC);
 }
