@@ -2,15 +2,19 @@ language: cpp
 os:
   - linux
   - osx
-# Use Ubuntu 14.04 LTS (Trusty) as the Linux testing environment.
+
 sudo: required
+
 dist: trusty
+
 env:
   - SHADERC_BUILD_TYPE=Release
   - SHADERC_BUILD_TYPE=Debug
+
 compiler:
   - clang
   - gcc
+
 matrix:
   fast_finish: true # Show final status immediately if a test fails.
   exclude:
@@ -22,20 +26,25 @@ matrix:
     - os: linux
       compiler: gcc
       env: SHADERC_CODE_COVERAGE=ON
+
 cache:
   apt: true
+
 branches:
   only:
     - master
+
 addons:
   apt:
     packages:
       - clang-3.6
       - ninja-build
       - lcov
+
 before_install:
   # Install ninja on Mac OS X.
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update && brew install ninja; fi
+
 install:
   - pip install --user nose
   - pip install --user cpp-coveralls
@@ -44,15 +53,18 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$CC" == "clang" ]]; then
       export CC=clang-3.6 CXX=clang++-3.6;
     fi
+
 before_script:
   - git clone https://github.com/google/googletest.git        third_party/googletest
   - git clone https://github.com/google/glslang.git           third_party/glslang
   - git clone https://github.com/KhronosGroup/SPIRV-Tools.git third_party/spirv-tools
+
 script:
   - mkdir build && cd build
   - cmake -GNinja -DCMAKE_BUILD_TYPE=${SHADERC_BUILD_TYPE:-Debug} -DENABLE_CODE_COVERAGE=${SHADERC_CODE_COVERAGE:-OFF} ..
   - ninja
   - ctest
+
 after_success:
   # Collect coverage and push to coveralls.info.
   # Ignore third party source code and tests.
@@ -67,8 +79,6 @@ after_success:
         --gcov-options '\--long-file-names --preserve-paths'
         --verbose;
     fi
-
-
 
 notifications:
   email:
