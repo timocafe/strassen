@@ -141,10 +141,10 @@ public:
   vector &operator+=(const vector &v) {
     assert(size() == v.size() &&
            " can not make addition between vector of different size ");
-    if (gpu_ready_.fetch_sub(1))
-      add_vector_gpu(*this, v);
-    else
-      add_vector_cpu(*this, v);
+    //  if (gpu_ready_.fetch_sub(1))
+    //    add_vector_gpu(*this, v);
+    //  else
+    add_vector_cpu(*this, v);
     return *this;
   }
 
@@ -154,10 +154,10 @@ public:
   vector &operator-=(const vector &v) {
     assert(size() == v.size() &&
            " can not make substraction between vector of different size ");
-    if (gpu_ready_.fetch_sub(1))
-      sub_vector_gpu(*this, v);
-    else
-      sub_vector_cpu(*this, v);
+    //  if (gpu_ready_.fetch_sub(1))
+    //    sub_vector_gpu(*this, v);
+    //  else
+    sub_vector_cpu(*this, v);
     return *this;
   }
 
@@ -223,6 +223,20 @@ public:
   /// \brief Return the data pointer
   ///
   pointer data() const { return data_; }
+
+  ///
+  /// \brief Return the data pointer need for copy block/matrix
+  ///
+  pointer data() { return data_; }
+
+  inline void size(size_type s) { size_ = s; }
+
+  inline void shared(bool b) { shared_ = true; }
+
+  ///
+  /// \brief set up the pointer directly need for copy block/matrix
+  ///
+  void data(pointer p) { data_ = p; }
 
   ///
   /// \brief Return the memory allocated
