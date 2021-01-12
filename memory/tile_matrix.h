@@ -237,3 +237,20 @@ inline void copy_matrix(tile_matrix<T> &m1, const tile_matrix<T> &m2,
       //    m1.tile(i + x, j + y).size(m2.tile(i, j).size());
     }
 }
+
+template <class T> inline matrix<T> aggregate(const tile_matrix<T> &A) {
+  matrix<T> B(A.rows(), A.cols());
+  uint32_t nrows = A.tile_rows();
+  uint32_t ncols = A.tile_cols();
+
+  for (int i = 0; i < nrows; ++i)
+    for (int j = 0; j < ncols; ++j) {
+      const auto &m = A.tile(i, j);
+      for (int k = 0; k < m.cols(); ++k) {
+        auto begin = &m(0, k);
+        auto end = begin + m.rows();
+        std::copy(begin, end, &B(i * m.rows(), j * m.cols() + k));
+      }
+    }
+  return B;
+}

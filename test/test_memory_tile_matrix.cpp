@@ -245,3 +245,34 @@ TEST(CopyBlockAndMatrix, CopyMatrix) {
   EXPECT_EQ(B(0, 1), 2);
   EXPECT_EQ(B(1, 1), 3);
 }
+
+TEST(AlgebraTestTileMatrix, EqualityMatrix) {
+
+  matrix<float> m(4, 4);
+  m = {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15., 16.};
+
+  tile_matrix<float> m1(4, 4, 2);
+
+  m1(0, 0) = 1.;
+  m1(1, 0) = 2.;
+  m1(2, 0) = 3.;
+  m1(3, 0) = 4.;
+
+  m1(0, 1) = 5.;
+  m1(1, 1) = 6.;
+  m1(2, 1) = 7.;
+  m1(3, 1) = 8.;
+
+  m1(0, 2) = 9.;
+  m1(1, 2) = 10.;
+  m1(2, 2) = 11.;
+  m1(3, 2) = 12.;
+
+  m1(0, 3) = 13.;
+  m1(1, 3) = 14.;
+  m1(2, 3) = 15.;
+  m1(3, 3) = 16.;
+
+  auto m_agregate = aggregate(m1);
+  EXPECT_EQ((m_agregate == m), true);
+}

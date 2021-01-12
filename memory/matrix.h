@@ -91,7 +91,7 @@ public:
   ///
   /// \brief Return an iterator at the end of the vector
   ///
-  const_iterator end() const { return data_.begin(); }
+  const_iterator end() const { return data_.end(); }
 
   ///
   /// \brief Return the number of cols
@@ -164,6 +164,23 @@ public:
   matrix &operator-=(const matrix &m) {
     data_ -= m.data_;
     return *this;
+  }
+
+  ///
+  /// \brief Substraction between two matrix
+  ///
+  bool operator==(const matrix &m) {
+    auto epsilon = [](value_type a, value_type b) -> value_type {
+      return std::max(std::abs(a), std::abs(b)) * 1e-3;
+    };
+    auto g = [&](value_type a, value_type b) {
+      return ((a - b) < epsilon(a, b)) && ((b - a) < epsilon(a, b));
+    };
+    bool b = true;
+    for (int i = 0; i < rows(); ++i)
+      for (int j = 0; j < cols(); ++j)
+        b &= g((*this)(i, j), m(i, j)); // as soon as false game over
+    return b;
   }
 
   ///
@@ -250,10 +267,9 @@ template <class T> void random_gpu(matrix<T> &m) {
 
 template <class T> void random_cpu(matrix<T> &m) {
   std::random_device rnd_device;
-  std::mt19937 mersenne_engine{rnd_device()}; // Generates random integers
-  std::uniform_real_distribution<float> dist{0, 1};
-  auto gen = [&dist, &mersenne_engine]() { return dist(mersenne_engine); };
-  std::generate(m.begin(), m.end(), gen);
+  std::mt19937 mersenne_engine{rnd_device()};
+  std::uniform_real_distribution<> dist{-1., 1.};
+  std::generate(m.begin(), m.end(), [&]() { return dist(mersenne_engine); });
 }
 
 #ifdef CUDA_STRASSEN
