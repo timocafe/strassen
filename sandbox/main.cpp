@@ -8,12 +8,26 @@
 
 #include <algorithm>
 #include <chrono>
+#include <iomanip>
 #include <iostream>
 
 #include "algo/strassen.h"
 #include "memory/tile_matrix.h"
 
+static const float GIGA = 1000000000;
+
+float classical_flops(float n) { return 2 * n * n * n - n * n; }
+
+// https://mathworld.wolfram.com/StrassenFormulas.html
+// log2 !
+float strassen_flops(float n) {
+  return 7 * std::pow(7, std::log2(n)) - 6 * std::pow(4, std::log2(n));
+}
+
+float gflops(float a, float time) { return (a / time) / GIGA; }
+
 int main(int argc, char *argv[]) {
+  std::cout << std::fixed << std::setprecision(2);
 
   int size = std::atoi(argv[1]);
   int bls = std::atoi(argv[2]);
@@ -33,13 +47,17 @@ int main(int argc, char *argv[]) {
   auto end = std::chrono::system_clock::now();
   auto elapsed =
       std::chrono::duration<float, std::chrono::seconds::period>(end - start);
-  std::cout << " time to solution Classical: " << elapsed.count() << std::endl;
+  std::cout << "Time to solution, " << elapsed.count() << "[s], "
+            << gflops(classical_flops(size), elapsed.count())
+            << ", [GFlop/s], Classical " << std::endl;
   start = std::chrono::system_clock::now();
   C = strassen(A, B, bls);
   end = std::chrono::system_clock::now();
   elapsed =
       std::chrono::duration<float, std::chrono::seconds::period>(end - start);
-  std::cout << " time to solution Strassen: " << elapsed.count() << std::endl;
+  std::cout << "Time to solution, " << elapsed.count() << "[s], "
+            << gflops(strassen_flops(size), elapsed.count())
+            << ", [GFlop/s], Strassen " << std::endl;
 
   auto AgreC = aggregate(C);
   /*
