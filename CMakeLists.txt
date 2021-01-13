@@ -19,7 +19,7 @@ endif()
 
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
-find_package(TBB REQUIRED)
+find_package(TBB )
 include_directories(${TBB_INCLUDE_DIRS})
 
 include(ClangFormat)

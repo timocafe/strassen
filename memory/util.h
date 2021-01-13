@@ -9,6 +9,7 @@
 #pragma once
 
 #include <Eigen/Dense>
+#include <atomic>
 
 #ifdef CUDA_STRASSEN
 
