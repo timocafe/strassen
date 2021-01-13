@@ -17,8 +17,10 @@ include_directories(${CUDA_TOOLKIT_INCLUDE})
 set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};--fmad=true;--default-stream per-thread;-std=c++14;--expt-relaxed-constexpr)
 endif()
 
-find_package (Eigen3 3.3 REQUIRED NO_MODULE)
+find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 
+find_package(TBB REQUIRED)
+include_directories(${TBB_INCLUDE_DIRS})
 
 include(ClangFormat)
 clangformat_setup(

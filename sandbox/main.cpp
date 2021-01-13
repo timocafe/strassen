@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
       std::chrono::duration<float, std::chrono::seconds::period>(end - start);
   std::cout << "Time to solution, " << elapsed.count() << "[s], "
             << gflops(classical_flops(size), elapsed.count())
-            << ", [GFlop/s], Classical " << std::endl;
+            << ", [Flop/s], Classical " << std::endl;
   start = std::chrono::system_clock::now();
   C = strassen(A, B, bls);
   end = std::chrono::system_clock::now();
@@ -57,14 +57,13 @@ int main(int argc, char *argv[]) {
       std::chrono::duration<float, std::chrono::seconds::period>(end - start);
   std::cout << "Time to solution, " << elapsed.count() << "[s], "
             << gflops(strassen_flops(size), elapsed.count())
-            << ", [GFlop/s], Strassen " << std::endl;
+            << ", [Flop/s], Strassen " << std::endl;
 
-  auto AgreC = aggregate(C);
-  /*
-    bool b = (CC == AgreC);
-    if (b)
-      std::cout << " It works !\n";
-    else
-      std::cout << " It does not works !\n";
-  */
+  // auto AgreC = aggregate(C);
+
+  //   bool b = (CC == AgreC);
+  //   if (b)
+  //     std::cout << " It works !\n";
+  //   else
+  //     std::cout << " It does not works !\n";
 }

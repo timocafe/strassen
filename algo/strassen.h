@@ -9,6 +9,7 @@
 #pragma once
 
 #include "memory/tile_matrix.h"
+#include <tbb/task_group.h>
 
 //
 // \brief strassen algo with notation wikipedia, lbs indicate the limit block
@@ -46,13 +47,24 @@ tile_matrix<T> strassen(const tile_matrix<T> &A, const tile_matrix<T> &B,
   copy_block(B21, B, mt, 0);
   copy_block(B22, B, mt, mt);
 
-  const auto &M1 = strassen(A11 + A22, B11 + B22, lbs);
-  const auto &M2 = strassen(A21 + A22, B11, lbs);
-  const auto &M3 = strassen(A11, B12 - B22, lbs);
-  const auto &M4 = strassen(A22, B21 - B11, lbs);
-  const auto &M5 = strassen(A11 + A12, B22, lbs);
-  const auto &M6 = strassen(A21 - A11, B11 + B12, lbs);
-  const auto &M7 = strassen(A12 - A22, B21 + B22, lbs);
+  tile_matrix<T> M1(k, k, lbs, 0);
+  tile_matrix<T> M2(k, k, lbs, 0);
+  tile_matrix<T> M3(k, k, lbs, 0);
+  tile_matrix<T> M4(k, k, lbs, 0);
+  tile_matrix<T> M5(k, k, lbs, 0);
+  tile_matrix<T> M6(k, k, lbs, 0);
+  tile_matrix<T> M7(k, k, lbs, 0);
+
+  tbb::task_group g;
+
+  g.run([&] { M1 = strassen(A11 + A22, B11 + B22, lbs); });
+  g.run([&] { M2 = strassen(A21 + A22, B11, lbs); });
+  g.run([&] { M3 = strassen(A11, B12 - B22, lbs); });
+  g.run([&] { M4 = strassen(A22, B21 - B11, lbs); });
+  g.run([&] { M5 = strassen(A11 + A12, B22, lbs); });
+  g.run([&] { M6 = strassen(A21 - A11, B11 + B12, lbs); });
+  g.run([&] { M7 = strassen(A12 - A22, B21 + B22, lbs); });
+  g.wait();
 
   tile_matrix<T> C11(k, k, lbs, 0);
   C11 = M1 + M4;

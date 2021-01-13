@@ -8,7 +8,7 @@
             "defines": [],
             "macFrameworkPath": [],
             "compilerPath": "/usr/bin/clang++",
-            "cStandard": "c14",
+            "cStandard":"c11",
             "cppStandard": "c++14",
             "intelliSenseMode": "${default}",
             "configurationProvider": "ms-vscode.cmake-tools"
