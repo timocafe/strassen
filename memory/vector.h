@@ -15,9 +15,6 @@
 
 #include "memory/allocator.h"
 
-// policy for the specific copy constructor
-struct policy_shared {};
-
 // using eigen_matrix_type =
 //    Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic,
 //    Eigen::ColMajor>;
@@ -50,7 +47,7 @@ public:
   /// The device first divice is selected only one the memory is initialized
   ///
   explicit vector(size_type n = 0, const value_type &v = value_type())
-      : data_(nullptr), size_(n), shared_(false) {
+      : data_(nullptr), size_(n) {
     if (n > 0) {
       data_ = (value_type *)allocate_policy(n * sizeof(value_type));
       std::fill(begin(), end(), v);
@@ -63,7 +60,6 @@ public:
   vector(std::initializer_list<value_type> l) {
     int n = l.size();
     size_ = n;
-    shared_ = false;
     if (n > 0) {
       data_ = (value_type *)allocate_policy(n * sizeof(value_type));
     }
@@ -71,20 +67,9 @@ public:
   }
 
   ///
-  /// \brief Specific copy constructor for the GPU. Provide the value to the
-  /// GPU, using unify memory the GPU will be able to reach the memory
-  ///
-  vector(const policy_shared &p, const vector &other) {
-    data_ = other.data_;
-    size_ = other.size_;
-    shared_ = true;
-  }
-
-  ///
   /// \brief copy constructor
   ///
-  vector(const vector &other)
-      : data_(nullptr), size_(other.size_), shared_(false) {
+  vector(const vector &other) : data_(nullptr), size_(other.size_) {
     if (other.data_ != nullptr) {
       data_ = (value_type *)allocate_policy(size_ * sizeof(value_type));
       std::copy(other.begin(), other.end(), begin());
@@ -95,11 +80,8 @@ public:
   /// \brief move constructor
   ///
   vector(vector &&other)
-      : data_(std::move(other.data_)), size_(std::move(other.size_)),
-        shared_(std::move(other.shared_)) {
-    other.data_ = nullptr;
+      : data_(std::move(other.data_)), size_(std::move(other.size_)) {
     other.size_ = 0;
-    other.shared_ = false;
   }
 
   ///
@@ -110,7 +92,6 @@ public:
   vector &operator=(vector &&other) {
     std::swap(data_, other.data_);
     std::swap(size_, other.size_);
-    std::swap(shared_, other.shared_);
     return *this;
   }
 
@@ -120,8 +101,7 @@ public:
   ///        using unify memory the GPU will be able to reach the memory
   ///
   vector &operator=(const vector &other) {
-    vector v(other);
-    *this = std::move(v);
+    *this = vector(other);
     return *this;
   }
 
@@ -132,12 +112,10 @@ public:
   ///        destruction on the GPU is impossible (shared = false))
   ///
   ~vector() {
-    if (!shared_) {
-      if (data_ != nullptr) {
-        deallocate_policy(data_);
-        size_ = 0;
-        data_ = nullptr;
-      }
+    if (data_ != nullptr) {
+      deallocate_policy(data_);
+      size_ = 0;
+      data_ = nullptr;
     }
   }
 
@@ -273,7 +251,6 @@ public:
 private:
   size_type size_; // size of the vector
   pointer data_;   // pointer of the data
-  bool shared_;    // only use for GPU to provide arument to cuda kernel
 };
 #ifdef CUDA_STRASSEN
 ///

@@ -35,6 +35,44 @@ public:
         data_(tile_rows_ * tile_cols_, matrix<value_type>(tile, tile, init)){};
 
   ///
+  /// \brief copy constructor
+  ///
+  tile_matrix(const tile_matrix &m)
+      : rows_(m.rows_), cols_(m.cols_), tile_rows_(m.tile_rows_),
+        tile_cols_(m.tile_cols_), tile_(m.tile_), data_(m.data_) {}
+
+  ///
+  /// \brief asssign constructor
+  ///
+  tile_matrix &operator=(const tile_matrix &m) {
+    for (int i = 0; i < data_.size(); ++i)
+      data_[i] = m.data()[i];
+    return *this;
+  }
+
+  ///
+  /// \brief move constructor, the automatic does not reset rows_ and cols_ to 0
+  /// (no swap)
+  tile_matrix(tile_matrix &&m)
+      : rows_(m.rows_), cols_(m.cols_), tile_rows_(m.tile_rows_),
+        tile_cols_(m.tile_cols_), tile_(m.tile_), data_(std::move(m.data())) {
+    m.rows_ = 0;
+    m.cols_ = 0;
+    m.tile_cols_ = 0;
+    m.tile_rows_ = 0;
+    m.tile_ = 0;
+  };
+
+  ///
+  /// \brief assign move operator, needed because move constructor
+  ///
+  tile_matrix &operator=(tile_matrix &&m) {
+    for (int i = 0; i < data_.size(); ++i)
+      std::swap(data_[i], m.data()[i]);
+    return *this;
+  }
+
+  ///
   /// \brief Return the number of cols
   ///
   inline size_type cols() const { return cols_; }
@@ -118,12 +156,12 @@ public:
   ///
   /// \brief Return the vector of tile
   ///
-  const std::vector<matrix<value_type>> &data() const { return data_; }
+  const vector<matrix<value_type>> &data() const { return data_; }
 
   ///
   /// \brief Return the vector of tile
   ///
-  std::vector<matrix<value_type>> &data() { return data_; }
+  vector<matrix<value_type>> &data() { return data_; }
 
   ///
   /// \brief Addition between two tile_matrix
@@ -163,7 +201,7 @@ private:
   size_type tile_rows_;
   size_type tile_cols_;
   size_type tile_;
-  std::vector<matrix<value_type>> data_;
+  vector<matrix<value_type>> data_;
 };
 
 ///
