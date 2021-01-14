@@ -29,6 +29,7 @@ clangformat_setup(
   memory/matrix.h
   memory/tile_matrix.h
   memory/util.h
+  memory/allocator.h
   algo/strassen.h
   test/test_memory_vector.cpp
   test/test_memory_matrix.cpp

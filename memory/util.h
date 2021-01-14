@@ -46,4 +46,4 @@
 #endif
 template <class T> void print(const T &t) { std::cout << t << std::endl; }
 
-static std::atomic<int> gpu_ready_(1);
+static std::atomic<int> gpu_ready_(0);

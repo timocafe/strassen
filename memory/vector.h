@@ -13,6 +13,8 @@
 
 #include "memory/util.h"
 
+#include "memory/allocator.h"
+
 // policy for the specific copy constructor
 struct policy_shared {};
 
@@ -28,9 +30,13 @@ struct policy_shared {};
 ///        syntax
 ///        my_kernel<<<blocks,threads>>>({policy_shared(),my_vector});
 ///
-template <class T> class vector {
+template <class T, class allocator = cstandard>
+class vector : public allocator {
 
 public:
+  using allocator::allocate_policy;
+  using allocator::deallocate_policy;
+
   typedef uint32_t size_type;
   typedef T value_type;
   typedef value_type *pointer;
@@ -46,12 +52,7 @@ public:
   explicit vector(size_type n = 0, const value_type &v = value_type())
       : data_(nullptr), size_(n), shared_(false) {
     if (n > 0) {
-#ifdef CUDA_STRASSEN
-      CUDA_CALL(cudaMallocManaged(&data_, n * sizeof(value_type)));
-      cudaDeviceSynchronize(); // specific jetson
-#else
-      data_ = new value_type[n];
-#endif
+      data_ = (value_type *)allocate_policy(n * sizeof(value_type));
       std::fill(begin(), end(), v);
     }
   }
@@ -64,12 +65,7 @@ public:
     size_ = n;
     shared_ = false;
     if (n > 0) {
-#ifdef CUDA_STRASSEN
-      CUDA_CALL(cudaMallocManaged(&data_, n * sizeof(value_type)));
-      cudaDeviceSynchronize(); // specific jetson
-#else
-      data_ = new value_type[n];
-#endif
+      data_ = (value_type *)allocate_policy(n * sizeof(value_type));
     }
     std::copy(l.begin(), l.end(), data_);
   }
@@ -90,12 +86,7 @@ public:
   vector(const vector &other)
       : data_(nullptr), size_(other.size_), shared_(false) {
     if (other.data_ != nullptr) {
-#ifdef CUDA_STRASSEN
-      CUDA_CALL(cudaMallocManaged(&data_, size_ * sizeof(value_type)));
-      cudaDeviceSynchronize(); // specific jetson
-#else
-      data_ = new value_type[size_];
-#endif
+      data_ = (value_type *)allocate_policy(size_ * sizeof(value_type));
       std::copy(other.begin(), other.end(), begin());
     }
   }
@@ -143,12 +134,7 @@ public:
   ~vector() {
     if (!shared_) {
       if (data_ != nullptr) {
-
-#ifdef CUDA_STRASSEN
-        cudaFree(data_);
-#else
-        delete[] data_;
-#endif
+        deallocate_policy(data_);
         size_ = 0;
         data_ = nullptr;
       }
@@ -161,13 +147,18 @@ public:
   vector &operator+=(const vector &v) {
     assert(size() == v.size() &&
            " can not make addition between vector of different size ");
-#ifdef CUDA_STRASSEN
-    if (gpu_ready_.compare_exchange_strong(0, 1)) {
-      add_vector_gpu(*this, v);
-      gpu_ready_ = 0;
-    } else
-#endif
-          add_vector_cpu(*this, v);
+    int b(0);
+    /*
+    #ifdef CUDA_STRASSEN
+        if (!gpu_ready_.compare_exchange_strong(b, 1)) {
+          cudaDeviceSynchronize(); // specific jetson
+          add_vector_gpu(*this, v);
+          cudaDeviceSynchronize(); // specific jetson
+          gpu_ready_ = 0;
+        } else {
+    #endif
+    */
+    add_vector_cpu(*this, v);
     return *this;
   }
 
@@ -177,14 +168,18 @@ public:
   vector &operator-=(const vector &v) {
     assert(size() == v.size() &&
            " can not make substraction between vector of different size ");
-
-#ifdef CUDA_STRASSEN
-    if (gpu_ready_.compare_exchange_strong(0, 1)) {
-      sub_vector_gpu(*this, v);
-      gpu_ready_ = 0;
-    } else
-#endif
-      sub_vector_cpu(*this, v);
+    int b(0);
+    /*
+    #ifdef CUDA_STRASSEN
+        if (!gpu_ready_.compare_exchange_strong(b, 1)) {
+          cudaDeviceSynchronize(); // specific jetson
+          sub_vector_gpu(*this, v);
+          cudaDeviceSynchronize(); // specific jetson
+          gpu_ready_ = 0;
+        } else
+    #endif
+    */
+    sub_vector_cpu(*this, v);
     return *this;
   }
 
@@ -284,8 +279,8 @@ private:
 ///
 /// \brief Addition Substraction between two vectors on GPU
 ///
-template <class T>
-void helper_add(vector<T> &v_y, const vector<T> &v_x, const float a) {
+template <class T, class A>
+void helper_add(vector<T, A> &v_y, const vector<T, A> &v_x, const float a) {
   cublasHandle_t handle;
   CUBLAS_STATUS_CALL(cublasCreate(&handle));
   int n = v_y.size();
@@ -303,24 +298,24 @@ void helper_add(vector<T> &v_y, const vector<T> &v_x, const float a) {
 ///
 /// \brief Addition between two vectors on GPU
 ///
-template <class T>
-inline void add_vector_gpu(vector<T> &v_y, const vector<T> &v_x) {
+template <class T, class A>
+inline void add_vector_gpu(vector<T, A> &v_y, const vector<T, A> &v_x) {
   helper_add(v_y, v_x, 1.f);
 }
 
 ///
 /// \brief Substraction between two vectors on GPU
 ///
-template <class T>
-inline void sub_vector_gpu(vector<T> &v_y, const vector<T> &v_x) {
+template <class T, class A>
+inline void sub_vector_gpu(vector<T, A> &v_y, const vector<T, A> &v_x) {
   helper_add(v_y, v_x, -1.f);
 }
 #endif
 ///
 /// \brief Addition between two vectors on CPU
 ///
-template <class T>
-inline void add_vector_cpu(vector<T> &v_y, const vector<T> &v_x) {
+template <class T, class A>
+inline void add_vector_cpu(vector<T, A> &v_y, const vector<T, A> &v_x) {
   using eigen_vector_type =
       Eigen::Matrix<T, Eigen::Dynamic, 1, Eigen::ColMajor>;
   Eigen::Map<eigen_vector_type>(v_y.data(), v_y.size()) +=
@@ -330,8 +325,8 @@ inline void add_vector_cpu(vector<T> &v_y, const vector<T> &v_x) {
 ///
 /// \brief Substraction between two vectors on CPU
 ///
-template <class T>
-inline void sub_vector_cpu(vector<T> &v_y, const vector<T> &v_x) {
+template <class T, class A>
+inline void sub_vector_cpu(vector<T, A> &v_y, const vector<T, A> &v_x) {
   using eigen_vector_type =
       Eigen::Matrix<T, Eigen::Dynamic, 1, Eigen::ColMajor>;
   Eigen::Map<eigen_vector_type>(v_y.data(), v_y.size()) -=
@@ -341,8 +336,8 @@ inline void sub_vector_cpu(vector<T> &v_y, const vector<T> &v_x) {
 ///
 /// \brief Overload << stream operator
 ///
-template <class T>
-std::ostream &operator<<(std::ostream &out, const vector<T> &b) {
+template <class T, class A>
+std::ostream &operator<<(std::ostream &out, const vector<T, A> &b) {
   b.print(out);
   return out;
 }

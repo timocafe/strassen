@@ -19,7 +19,7 @@
 #include "memory/vector.h"
 
 // matrix col order to be compliant with BLAS else ...
-template <class T> class matrix {
+template <class T, class A = cstandard> class matrix {
 public:
   typedef uint32_t size_type;
   typedef T value_type;
@@ -80,7 +80,7 @@ public:
   matrix &operator=(std::initializer_list<value_type> l) {
     assert(l.size() <= rows() * cols() &&
            " more element than the dimenstion of the matrix ");
-    data_ = std::move(vector<value_type>(l));
+    data_ = std::move(vector<value_type, A>(l));
     return *this;
   }
   ///
@@ -89,9 +89,19 @@ public:
   iterator begin() { return data_.begin(); }
 
   ///
+  /// \brief Return an iterator at the beginning of the vector
+  ///
+  const_iterator begin() const { return data_.begin(); }
+
+  ///
   /// \brief Return an iterator at the end of the vector
   ///
   const_iterator end() const { return data_.end(); }
+
+  ///
+  /// \brief Return an iterator at the end of the vector
+  ///
+  iterator end() { return data_.end(); }
 
   ///
   /// \brief Return the number of cols
@@ -198,20 +208,20 @@ public:
 private:
   size_type rows_;
   size_type cols_;
-  vector<value_type> data_;
+  vector<value_type, A> data_;
 };
 
 ///
 /// \brief Overload << stream operator
 ///
-template <class T>
-std::ostream &operator<<(std::ostream &out, const matrix<T> &b) {
+template <class T, class A>
+std::ostream &operator<<(std::ostream &out, const matrix<T, A> &b) {
   b.print(out);
   return out;
 }
 
-template <class T>
-inline void copy_block(matrix<T> &m1, const matrix<T> &m2, uint32_t x,
+template <class T, class A>
+inline void copy_block(matrix<T, A> &m1, const matrix<T, A> &m2, uint32_t x,
                        uint32_t y) {
 
   using eigen_vector_type =
@@ -226,8 +236,8 @@ inline void copy_block(matrix<T> &m1, const matrix<T> &m2, uint32_t x,
   }
 }
 
-template <class T>
-inline void copy_matrix(matrix<T> &m1, const matrix<T> &m2, uint32_t x,
+template <class T, class A>
+inline void copy_matrix(matrix<T, A> &m1, const matrix<T, A> &m2, uint32_t x,
                         uint32_t y) {
 
   using eigen_vector_type =
@@ -242,16 +252,9 @@ inline void copy_matrix(matrix<T> &m1, const matrix<T> &m2, uint32_t x,
   }
 }
 
-template <class T> void random(matrix<T> &m) {
+template <class T, class A> void random(matrix<T, A> &m) { random_cpu(m); }
 #ifdef CUDA_STRASSEN
-  if (gpu_ready_.fetch_sub(1))
-    random_gpu(m);
-  else
-#endif
-    random_cpu(m);
-}
-#ifdef CUDA_STRASSEN
-template <class T> void random_gpu(matrix<T> &m) {
+template <class T, class A> void random_gpu(matrix<T, A> &m) {
   curandGenerator_t gen;
   /* Create pseudo-random number generator */
   CURAND_CALL(curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT));
@@ -261,11 +264,10 @@ template <class T> void random_gpu(matrix<T> &m) {
   CURAND_CALL(curandGenerateUniform(gen, m.data(), m.size()));
   /* Cleanup */
   CURAND_CALL(curandDestroyGenerator(gen));
-  gpu_ready_.fetch_add(1);
 }
 #endif
 
-template <class T> void random_cpu(matrix<T> &m) {
+template <class T, class A> void random_cpu(matrix<T, A> &m) {
   std::random_device rnd_device;
   std::mt19937 mersenne_engine{rnd_device()};
   std::uniform_real_distribution<> dist{-1., 1.};
@@ -274,16 +276,32 @@ template <class T> void random_cpu(matrix<T> &m) {
 
 #ifdef CUDA_STRASSEN
 
-template <class T>
-inline void mul_matrix_gpu(matrix<T> &mC, const matrix<T> &mA,
-                           const matrix<T> &mB) {
-  using size_type = typename matrix<T>::size_type;
+template <class T, class A>
+inline void mul_matrix_gpu(matrix<T, A> &mC, const matrix<T, A> &mA,
+                           const matrix<T, A> &mB) {
+  using size_type = typename matrix<T, A>::size_type;
   cublasHandle_t handle;
   CUBLAS_STATUS_CALL(cublasCreate(&handle));
 
-  float *A = mA.data();
-  float *B = mB.data();
-  float *C = mC.data();
+  matrix<T, cuda_unify> uA(mA.rows(), mA.cols());
+  matrix<T, cuda_unify> uB(mB.rows(), mB.cols());
+  matrix<T, cuda_unify> uC(mC.rows(), mC.cols());
+
+  uA.prefetch_cpu();
+  uB.prefetch_cpu();
+  uC.prefetch_cpu();
+
+  std::copy(mA.begin(), mA.end(), uA.begin());
+  std::copy(mB.begin(), mB.end(), uB.begin());
+  std::copy(mC.begin(), mC.end(), uC.begin());
+
+  uA.prefetch_gpu();
+  uB.prefetch_gpu();
+  uC.prefetch_gpu();
+
+  float *pA = uA.data();
+  float *pB = uB.data();
+  float *pC = uC.data();
 
   float alpha = 1.f;
   float beta = 0.f;
@@ -300,15 +318,17 @@ inline void mul_matrix_gpu(matrix<T> &mC, const matrix<T> &mA,
   size_type k = mB.rows();
 
   CUBLAS_STATUS_CALL(cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, k,
-                                 &alpha, A, lda, B, ldb, &beta, C, ldc));
+                                 &alpha, pA, lda, pB, ldb, &beta, pC, ldc));
   CUBLAS_STATUS_CALL(cublasDestroy(handle));
-  gpu_ready_.fetch_add(1);
+
+  uC.prefetch_cpu();
+  std::copy(uC.begin(), uC.end(), mC.begin());
 }
 #endif
 
-template <class T>
-inline void mul_matrix_cpu(matrix<T> &mC, const matrix<T> &mA,
-                           const matrix<T> &mB) {
+template <class T, class A>
+inline void mul_matrix_cpu(matrix<T, A> &mC, const matrix<T, A> &mA,
+                           const matrix<T, A> &mB) {
   using value_type = T;
   using eigen_matrix_type = Eigen::Matrix<value_type, Eigen::Dynamic,
                                           Eigen::Dynamic, Eigen::ColMajor>;
@@ -317,14 +337,15 @@ inline void mul_matrix_cpu(matrix<T> &mC, const matrix<T> &mA,
       Eigen::Map<eigen_matrix_type>(mB.data(), mB.rows(), mC.cols());
 }
 
-template <class T>
-inline auto operator*(const matrix<T> &mA, const matrix<T> &mB) {
+template <class T, class A>
+inline auto operator*(const matrix<T, A> &mA, const matrix<T, A> &mB) {
   using size_type = typename matrix<float>::size_type;
   size_type rows = mA.rows();
   size_type cols = mB.cols();
   matrix<float> mC(rows, cols);
 
-  if (gpu_ready_.compare_exchange_strong(0, 1)) {
+  int b(0);
+  if (!gpu_ready_.compare_exchange_strong(b, 1)) {
     mul_matrix_gpu(mC, mA, mB);
     gpu_ready_ = 0;
   } else {
@@ -334,15 +355,15 @@ inline auto operator*(const matrix<T> &mA, const matrix<T> &mB) {
   return std::move(mC);
 }
 
-template <class T>
-inline auto operator+(const matrix<T> &mA, const matrix<T> &mB) {
+template <class T, class A>
+inline auto operator+(const matrix<T, A> &mA, const matrix<T, A> &mB) {
   matrix<float> m(mA); // copy constructor
   m += mB;
   return std::move(m);
 }
 
-template <class T>
-inline auto operator-(const matrix<T> &mA, const matrix<T> &mB) {
+template <class T, class A>
+inline auto operator-(const matrix<T, A> &mA, const matrix<T, A> &mB) {
   matrix<float> m(mA); // copy constructor
   m -= mB;
   return std::move(m);
