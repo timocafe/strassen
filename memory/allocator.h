@@ -40,3 +40,9 @@ public:
 };
 
 #endif
+
+#ifdef CUDA_STRASSEN
+typedef cuda_unify allocator_policy;
+#else
+typedef cstandard allocator_policy;
+#endif

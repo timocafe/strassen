@@ -19,7 +19,7 @@
 #include "memory/vector.h"
 
 // matrix col order to be compliant with BLAS else ...
-template <class T, class A = cstandard> class matrix {
+template <class T, class A = allocator_policy> class matrix {
 public:
   typedef uint32_t size_type;
   typedef T value_type;
@@ -345,14 +345,16 @@ inline auto operator*(const matrix<T, A> &mA, const matrix<T, A> &mB) {
   matrix<float> mC(rows, cols);
 
   int b(0);
+#ifdef CUDA_STRASSEN
   if (!gpu_ready_.compare_exchange_strong(b, 1)) {
     mul_matrix_gpu(mC, mA, mB);
     gpu_ready_ = 0;
-  } else {
-    mul_matrix_cpu(mC, mA, mB);
-  }
+  } else
+#else
+  mul_matrix_cpu(mC, mA, mB);
+#endif
 
-  return std::move(mC);
+    return std::move(mC);
 }
 
 template <class T, class A>

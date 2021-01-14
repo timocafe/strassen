@@ -30,7 +30,7 @@ struct policy_shared {};
 ///        syntax
 ///        my_kernel<<<blocks,threads>>>({policy_shared(),my_vector});
 ///
-template <class T, class allocator = cstandard>
+template <class T, class allocator = allocator_policy>
 class vector : public allocator {
 
 public:
