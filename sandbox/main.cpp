@@ -61,9 +61,9 @@ int main(int argc, char *argv[]) {
 
   // auto AgreC = aggregate(C);
 
-  //   bool b = (CC == AgreC);
-  //   if (b)
-  //     std::cout << " It works !\n";
-  //   else
-  //     std::cout << " It does not works !\n";
+  // bool b = (CC == AgreC);
+  // if (b)
+  //   std::cout << " It works !\n";
+  // else
+  //   std::cout << " It does not works !\n";
 }

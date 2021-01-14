@@ -64,6 +64,7 @@ tile_matrix<T> strassen(const tile_matrix<T> &A, const tile_matrix<T> &B,
   g.run([&] { M5 = strassen(A11 + A12, B22, lbs); });
   g.run([&] { M6 = strassen(A21 - A11, B11 + B12, lbs); });
   g.run([&] { M7 = strassen(A12 - A22, B21 + B22, lbs); });
+
   g.wait();
 
   tile_matrix<T> C11(k, k, lbs, 0);

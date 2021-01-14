@@ -171,7 +171,7 @@ public:
   ///
   bool operator==(const matrix &m) {
     auto epsilon = [](value_type a, value_type b) -> value_type {
-      return std::max(std::abs(a), std::abs(b)) * 1e-3;
+      return std::max(std::abs(a), std::abs(b)) * 1; // tolerence ...
     };
     auto g = [&](value_type a, value_type b) {
       return ((a - b) < epsilon(a, b)) && ((b - a) < epsilon(a, b));
@@ -323,12 +323,13 @@ inline auto operator*(const matrix<T> &mA, const matrix<T> &mB) {
   size_type rows = mA.rows();
   size_type cols = mB.cols();
   matrix<float> mC(rows, cols);
-#ifdef CUDA_STRASSEN
-  if (gpu_ready_.fetch_sub(1))
+
+  if (gpu_ready_.compare_exchange_strong(0, 1)) {
     mul_matrix_gpu(mC, mA, mB);
-  else
-#endif
+    gpu_ready_ = 0;
+  } else {
     mul_matrix_cpu(mC, mA, mB);
+  }
 
   return std::move(mC);
 }

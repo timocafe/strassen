@@ -162,11 +162,12 @@ public:
     assert(size() == v.size() &&
            " can not make addition between vector of different size ");
 #ifdef CUDA_STRASSEN
-    if (gpu_ready_.fetch_sub(1))
+    if (gpu_ready_.compare_exchange_strong(0, 1)) {
       add_vector_gpu(*this, v);
-    else
+      gpu_ready_ = 0;
+    } else
 #endif
-      add_vector_cpu(*this, v);
+          add_vector_cpu(*this, v);
     return *this;
   }
 
@@ -176,10 +177,12 @@ public:
   vector &operator-=(const vector &v) {
     assert(size() == v.size() &&
            " can not make substraction between vector of different size ");
+
 #ifdef CUDA_STRASSEN
-    if (gpu_ready_.fetch_sub(1))
+    if (gpu_ready_.compare_exchange_strong(0, 1)) {
       sub_vector_gpu(*this, v);
-    else
+      gpu_ready_ = 0;
+    } else
 #endif
       sub_vector_cpu(*this, v);
     return *this;
