@@ -27,97 +27,24 @@
 ///        syntax
 ///        my_kernel<<<blocks,threads>>>({policy_shared(),my_vector});
 ///
-template <class T, class allocator = allocator_policy>
-class vector : public allocator {
+template <class T, class Allocator = allocator_policy<T>> class vector {
+  using size_type = typename std::vector<T, Allocator>::size_type;
+  using reference = typename std::vector<T, Allocator>::reference;
+  using const_reference = typename std::vector<T, Allocator>::const_reference;
+  using value_type = T;
 
 public:
-  using allocator::allocate_policy;
-  using allocator::deallocate_policy;
-
-  typedef uint32_t size_type;
-  typedef T value_type;
-  typedef value_type *pointer;
-  typedef pointer iterator;
-  typedef const pointer const_iterator;
-  typedef value_type &reference;
-  typedef const value_type &const_reference;
-
   ///
   /// \brief usual constructor
   /// The device first divice is selected only one the memory is initialized
   ///
   explicit vector(size_type n = 0, const value_type &v = value_type())
-      : data_(nullptr), size_(n) {
-    if (n > 0) {
-      data_ = (value_type *)allocate_policy(n * sizeof(value_type));
-      std::fill(begin(), end(), v);
-    }
-  }
+      : data_(n, v) {}
 
   ///
   /// \brief initializer constructor {1.,2. ...} col order !
   ///
-  vector(std::initializer_list<value_type> l) {
-    int n = l.size();
-    size_ = n;
-    if (n > 0) {
-      data_ = (value_type *)allocate_policy(n * sizeof(value_type));
-    }
-    std::copy(l.begin(), l.end(), data_);
-  }
-
-  ///
-  /// \brief copy constructor
-  ///
-  vector(const vector &other) : data_(nullptr), size_(other.size_) {
-    if (other.data_ != nullptr) {
-      data_ = (value_type *)allocate_policy(size_ * sizeof(value_type));
-      std::copy(other.begin(), other.end(), begin());
-    }
-  }
-
-  ///
-  /// \brief move constructor
-  ///
-  vector(vector &&other)
-      : data_(std::move(other.data_)), size_(std::move(other.size_)) {
-    other.size_ = 0;
-  }
-
-  ///
-  /// \brief assign move operator
-  /// GPU,
-  ///        using unify memory the GPU will be able to reach the memory
-  ///
-  vector &operator=(vector &&other) {
-    std::swap(data_, other.data_);
-    std::swap(size_, other.size_);
-    return *this;
-  }
-
-  ///
-  /// \brief assigm move operator
-  /// GPU,
-  ///        using unify memory the GPU will be able to reach the memory
-  ///
-  vector &operator=(const vector &other) {
-    *this = vector(other);
-    return *this;
-  }
-
-  ///
-  /// \brief Destructor, the destruction only append if the value of the pointer
-  /// is not null
-  ///        (due to the move constructor) and not shared (because the
-  ///        destruction on the GPU is impossible (shared = false))
-  ///
-  ~vector() {
-    if (data_ != nullptr) {
-      deallocate_policy(data_);
-      size_ = 0;
-      data_ = nullptr;
-    }
-  }
+  vector(std::initializer_list<value_type> l) { data_ = l; }
 
   ///
   /// \brief Addition between two vectors
@@ -164,27 +91,27 @@ public:
   ///
   /// \brief Return an iterator at the beginning of the vector
   ///
-  iterator begin() { return data_; }
+  inline auto begin() { return data_.begin(); }
 
   ///
   /// \brief Return an iterator at the end of the vector
   ///
-  const_iterator end() const { return data_ + size_; }
+  inline auto end() const { return data_.end(); }
 
   ///
   /// \brief Return an iterator at the beginning of the vector
   ///
-  const_iterator begin() const { return data_; }
+  inline auto begin() const { return data_.begin(); }
 
   ///
   /// \brief Return an iterator at the end of the vector
   ///
-  iterator end() { return data_ + size_; }
+  inline auto end() { return data_.end(); }
 
   ///
   /// \brief Return the size of the vector
   ///
-  inline size_type size() const { return size_; }
+  inline auto size() const { return data_.size(); }
 
   ///
   /// \brief Return a reference of the data using usual bracket operator syntax
@@ -215,22 +142,17 @@ public:
   ///
   /// \brief Return the data pointer
   ///
-  pointer data() const { return data_; }
+  auto data() const { return data_.data(); }
 
   ///
   /// \brief Return the data pointer need for copy block/matrix
   ///
-  pointer data() { return data_; }
-
-  ///
-  /// \brief set up the pointer directly need for copy block/matrix
-  ///
-  void data(pointer p) { data_ = p; }
+  auto data() { return data_.data(); }
 
   ///
   /// \brief Return the memory allocated
   ///
-  size_type memory_allocated() const { return sizeof(T) * size_; }
+  size_type memory_allocated() const { return sizeof(T) * data_.size(); }
 #ifdef CUDA_STRASSEN
   ///
   //
@@ -249,8 +171,8 @@ public:
   }
 #endif
 private:
-  size_type size_; // size of the vector
-  pointer data_;   // pointer of the data
+  size_type size_;                 // size of the vector
+  std::vector<T, Allocator> data_; // pointer of the data
 };
 #ifdef CUDA_STRASSEN
 ///
@@ -295,8 +217,10 @@ template <class T, class A>
 inline void add_vector_cpu(vector<T, A> &v_y, const vector<T, A> &v_x) {
   using eigen_vector_type =
       Eigen::Matrix<T, Eigen::Dynamic, 1, Eigen::ColMajor>;
+  using const_eigen_vector_type =
+      const Eigen::Matrix<T, Eigen::Dynamic, 1, Eigen::ColMajor>;
   Eigen::Map<eigen_vector_type>(v_y.data(), v_y.size()) +=
-      Eigen::Map<eigen_vector_type>(v_x.data(), v_x.size());
+      Eigen::Map<const_eigen_vector_type>(v_x.data(), v_x.size());
 }
 
 ///
@@ -306,8 +230,10 @@ template <class T, class A>
 inline void sub_vector_cpu(vector<T, A> &v_y, const vector<T, A> &v_x) {
   using eigen_vector_type =
       Eigen::Matrix<T, Eigen::Dynamic, 1, Eigen::ColMajor>;
+  using const_eigen_vector_type =
+      const Eigen::Matrix<T, Eigen::Dynamic, 1, Eigen::ColMajor>;
   Eigen::Map<eigen_vector_type>(v_y.data(), v_y.size()) -=
-      Eigen::Map<eigen_vector_type>(v_x.data(), v_x.size());
+      Eigen::Map<const_eigen_vector_type>(v_x.data(), v_x.size());
 }
 
 ///

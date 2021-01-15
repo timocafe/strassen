@@ -45,8 +45,9 @@ public:
   /// \brief asssign constructor
   ///
   tile_matrix &operator=(const tile_matrix &m) {
-    for (int i = 0; i < data_.size(); ++i)
-      data_[i] = m.data()[i];
+    data_ = m.data();
+    // for (int i = 0; i < data_.size(); ++i)
+    //   data_[i] = m.data()[i];
     return *this;
   }
 
@@ -55,20 +56,15 @@ public:
   /// (no swap)
   tile_matrix(tile_matrix &&m)
       : rows_(m.rows_), cols_(m.cols_), tile_rows_(m.tile_rows_),
-        tile_cols_(m.tile_cols_), tile_(m.tile_), data_(std::move(m.data())) {
-    m.rows_ = 0;
-    m.cols_ = 0;
-    m.tile_cols_ = 0;
-    m.tile_rows_ = 0;
-    m.tile_ = 0;
-  };
+        tile_cols_(m.tile_cols_), tile_(m.tile_), data_(std::move(m.data_)){};
 
   ///
   /// \brief assign move operator, needed because move constructor
   ///
   tile_matrix &operator=(tile_matrix &&m) {
-    for (int i = 0; i < data_.size(); ++i)
-      std::swap(data_[i], m.data()[i]);
+    data_ = m.data();
+    // for (int i = 0; i < data_.size(); ++i)
+    //   std::swap(data_[i], m.data()[i]);
     return *this;
   }
 
@@ -156,12 +152,12 @@ public:
   ///
   /// \brief Return the vector of tile
   ///
-  const vector<matrix<value_type>> &data() const { return data_; }
+  const std::vector<matrix<value_type>> &data() const { return data_; }
 
   ///
   /// \brief Return the vector of tile
   ///
-  vector<matrix<value_type>> &data() { return data_; }
+  std::vector<matrix<value_type>> &data() { return data_; }
 
   ///
   /// \brief Addition between two tile_matrix
@@ -201,7 +197,7 @@ private:
   size_type tile_rows_;
   size_type tile_cols_;
   size_type tile_;
-  vector<matrix<value_type>> data_;
+  std::vector<matrix<value_type>> data_;
 };
 
 ///
@@ -219,7 +215,7 @@ std::ostream &operator<<(std::ostream &out, const tile_matrix<T> &b) {
 template <class T> void random(tile_matrix<T> &m) {
   auto &data = m.data();
   std::for_each(std::begin(data), std::end(data),
-                [&](auto &it) { return random(it); });
+                [&](auto &it) { random(it); });
 }
 
 template <class T>
@@ -238,7 +234,7 @@ inline auto operator-(const tile_matrix<T> &mA, const tile_matrix<T> &mB) {
 
 template <class T>
 inline auto mul(const tile_matrix<T> &mA, const tile_matrix<T> &mB) {
-  tile_matrix<float> m(mA.rows(), mA.cols(), mA.tile(), 0);
+  tile_matrix<float> m(mA.rows(), mA.cols(), mA.tile());
   m.tile(0, 0) = std::move(mA.tile(0, 0) * mB.tile(0, 0));
   return std::move(m);
 }

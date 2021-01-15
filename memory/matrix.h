@@ -19,7 +19,7 @@
 #include "memory/vector.h"
 
 // matrix col order to be compliant with BLAS else ...
-template <class T, class A = allocator_policy> class matrix {
+template <class T> class matrix {
 public:
   typedef uint32_t size_type;
   typedef T value_type;
@@ -49,10 +49,7 @@ public:
   ///
   matrix(matrix &&other)
       : data_(std::move(other.data_)), rows_(std::move(other.rows_)),
-        cols_(std::move(other.cols_)) {
-    other.rows_ = 0;
-    other.cols_ = 0;
-  }
+        cols_(std::move(other.cols_)) {}
 
   ///
   /// \brief assign move operator, needed because move constructor
@@ -80,28 +77,28 @@ public:
   matrix &operator=(std::initializer_list<value_type> l) {
     assert(l.size() <= rows() * cols() &&
            " more element than the dimenstion of the matrix ");
-    data_ = std::move(vector<value_type, A>(l));
+    data_ = l;
     return *this;
   }
   ///
   /// \brief Return an iterator at the beginning of the vector
   ///
-  iterator begin() { return data_.begin(); }
+  auto begin() { return data_.begin(); }
 
   ///
   /// \brief Return an iterator at the beginning of the vector
   ///
-  const_iterator begin() const { return data_.begin(); }
+  auto begin() const { return data_.begin(); }
 
   ///
   /// \brief Return an iterator at the end of the vector
   ///
-  const_iterator end() const { return data_.end(); }
+  auto end() const { return data_.end(); }
 
   ///
   /// \brief Return an iterator at the end of the vector
   ///
-  iterator end() { return data_.end(); }
+  auto end() { return data_.end(); }
 
   ///
   /// \brief Return the number of cols
@@ -116,12 +113,12 @@ public:
   ///
   /// \brief Return the const data pointer
   ///
-  pointer data() const { return data_.data(); }
+  auto data() const { return data_.data(); }
 
   ///
   /// \brief Return the data pointer
   ///
-  pointer data() { return data_.data(); }
+  auto data() { return data_.data(); }
 
   ///
   /// \brief Return the total number of element
@@ -208,20 +205,20 @@ public:
 private:
   size_type rows_;
   size_type cols_;
-  vector<value_type, A> data_;
+  vector<value_type, allocator_policy<value_type>> data_;
 };
 
 ///
 /// \brief Overload << stream operator
 ///
-template <class T, class A>
-std::ostream &operator<<(std::ostream &out, const matrix<T, A> &b) {
+template <class T>
+std::ostream &operator<<(std::ostream &out, const matrix<T> &b) {
   b.print(out);
   return out;
 }
 
-template <class T, class A>
-inline void copy_block(matrix<T, A> &m1, const matrix<T, A> &m2, uint32_t x,
+template <class T>
+inline void copy_block(matrix<T> &m1, const matrix<T> &m2, uint32_t x,
                        uint32_t y) {
 
   using eigen_vector_type =
@@ -236,8 +233,8 @@ inline void copy_block(matrix<T, A> &m1, const matrix<T, A> &m2, uint32_t x,
   }
 }
 
-template <class T, class A>
-inline void copy_matrix(matrix<T, A> &m1, const matrix<T, A> &m2, uint32_t x,
+template <class T>
+inline void copy_matrix(matrix<T> &m1, const matrix<T> &m2, uint32_t x,
                         uint32_t y) {
 
   using eigen_vector_type =
@@ -252,9 +249,9 @@ inline void copy_matrix(matrix<T, A> &m1, const matrix<T, A> &m2, uint32_t x,
   }
 }
 
-template <class T, class A> void random(matrix<T, A> &m) { random_cpu(m); }
+template <class T> void random(matrix<T> &m) { random_cpu(m); }
 #ifdef CUDA_STRASSEN
-template <class T, class A> void random_gpu(matrix<T, A> &m) {
+template <class T> void random_gpu(matrix<T> &m) {
   curandGenerator_t gen;
   /* Create pseudo-random number generator */
   CURAND_CALL(curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT));
@@ -267,7 +264,7 @@ template <class T, class A> void random_gpu(matrix<T, A> &m) {
 }
 #endif
 
-template <class T, class A> void random_cpu(matrix<T, A> &m) {
+template <class T> void random_cpu(matrix<T> &m) {
   std::random_device rnd_device;
   std::mt19937 mersenne_engine{rnd_device()};
   std::uniform_real_distribution<> dist{-1., 1.};
@@ -276,10 +273,10 @@ template <class T, class A> void random_cpu(matrix<T, A> &m) {
 
 #ifdef CUDA_STRASSEN
 
-template <class T, class A>
-inline void mul_matrix_gpu(matrix<T, A> &mC, const matrix<T, A> &mA,
-                           const matrix<T, A> &mB) {
-  using size_type = typename matrix<T, A>::size_type;
+template <class T>
+inline void mul_matrix_gpu(matrix<T> &mC, const matrix<T> &mA,
+                           const matrix<T> &mB) {
+  using size_type = typename matrix<T>::size_type;
   cublasHandle_t handle;
   CUBLAS_STATUS_CALL(cublasCreate(&handle));
 
@@ -326,23 +323,26 @@ inline void mul_matrix_gpu(matrix<T, A> &mC, const matrix<T, A> &mA,
 }
 #endif
 
-template <class T, class A>
-inline void mul_matrix_cpu(matrix<T, A> &mC, const matrix<T, A> &mA,
-                           const matrix<T, A> &mB) {
+template <class T>
+inline void mul_matrix_cpu(matrix<T> &mC, const matrix<T> &mA,
+                           const matrix<T> &mB) {
   using value_type = T;
   using eigen_matrix_type = Eigen::Matrix<value_type, Eigen::Dynamic,
                                           Eigen::Dynamic, Eigen::ColMajor>;
+  using const_eigen_matrix_type =
+      const Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic,
+                          Eigen::ColMajor>;
   Eigen::Map<eigen_matrix_type>(mC.data(), mC.rows(), mC.cols()) =
-      Eigen::Map<eigen_matrix_type>(mA.data(), mB.rows(), mC.cols()) *
-      Eigen::Map<eigen_matrix_type>(mB.data(), mB.rows(), mC.cols());
+      Eigen::Map<const_eigen_matrix_type>(mA.data(), mA.rows(), mA.cols()) *
+      Eigen::Map<const_eigen_matrix_type>(mB.data(), mB.rows(), mB.cols());
 }
 
-template <class T, class A>
-inline auto operator*(const matrix<T, A> &mA, const matrix<T, A> &mB) {
+template <class T>
+inline auto operator*(const matrix<T> &mA, const matrix<T> &mB) {
   using size_type = typename matrix<float>::size_type;
   size_type rows = mA.rows();
   size_type cols = mB.cols();
-  matrix<float> mC(rows, cols);
+  matrix<T> mC(rows, cols);
 
   int b(0);
 #ifdef CUDA_STRASSEN
@@ -353,19 +353,18 @@ inline auto operator*(const matrix<T, A> &mA, const matrix<T, A> &mB) {
 #else
   mul_matrix_cpu(mC, mA, mB);
 #endif
-
     return std::move(mC);
 }
 
-template <class T, class A>
-inline auto operator+(const matrix<T, A> &mA, const matrix<T, A> &mB) {
+template <class T>
+inline auto operator+(const matrix<T> &mA, const matrix<T> &mB) {
   matrix<float> m(mA); // copy constructor
   m += mB;
   return std::move(m);
 }
 
-template <class T, class A>
-inline auto operator-(const matrix<T, A> &mA, const matrix<T, A> &mB) {
+template <class T>
+inline auto operator-(const matrix<T> &mA, const matrix<T> &mB) {
   matrix<float> m(mA); // copy constructor
   m -= mB;
   return std::move(m);

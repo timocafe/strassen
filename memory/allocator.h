@@ -10,9 +10,9 @@
 
 #include "memory/util.h"
 
-class cstandard {
+template <class T> class cstandard : public std::allocator<T> {
 public:
-  typedef uint32_t size_type;
+  typedef typename std::allocator<T>::size_type size_type;
 
   void *allocate_policy(size_type size) {
     void *ptr = std::malloc(size);
@@ -23,10 +23,10 @@ public:
 };
 
 #ifdef CUDA_STRASSEN
-
-class cuda_unify {
+                                                                                          
+template <class T> class cuda_unify : public std::allocator<T> {
 public:
-  typedef uint32_t size_type;
+  typedef typename std::allocator<T>::size_type size_type;
 
   void *allocate_policy(size_type size) {
     void *ptr = nullptr;
@@ -36,13 +36,13 @@ public:
     return ptr;
   }
 
-  void deallocate_policy(void *ptr) { cudaFree(ptr); }
+  void deallocate_policy(void *ptr) { std::free(ptr); }
 };
 
 #endif
 
 #ifdef CUDA_STRASSEN
-typedef cuda_unify allocator_policy;
+template <class T> using allocator_policy = cuda_unify<T>;
 #else
-typedef cstandard allocator_policy;
+template <class T> using allocator_policy = cstandard<T>;
 #endif

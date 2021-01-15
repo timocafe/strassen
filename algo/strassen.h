@@ -23,7 +23,7 @@ tile_matrix<T> strassen(const tile_matrix<T> &A, const tile_matrix<T> &B,
   const uint32_t k = A.rows() / 2;
   if (lbs == n) // limit blocksize
     return std::move(mul(A, B));
-
+  // allocate nothing careful size tile = 0
   tile_matrix<T> A11(k, k, lbs, 0);
   tile_matrix<T> A12(k, k, lbs, 0);
   tile_matrix<T> A21(k, k, lbs, 0);

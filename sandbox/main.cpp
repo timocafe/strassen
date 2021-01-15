@@ -38,33 +38,34 @@ int main(int argc, char *argv[]) {
 
   random(A);
   random(B);
-  /*
-    auto AgreA = aggregate(A);
-    auto AgreB = aggregate(B);
 
-    auto start = std::chrono::system_clock::now();
-    auto CC = AgreA * AgreB;
-    auto end = std::chrono::system_clock::now();
-    auto elapsed =
-        std::chrono::duration<float, std::chrono::seconds::period>(end - start);
-    std::cout << "Time to solution, " << elapsed.count() << "[s], "
-              << gflops(classical_flops(size), elapsed.count())
-              << ", [Flop/s], Classical " << std::endl;
-              */
+  auto AgreA = aggregate(A);
+  auto AgreB = aggregate(B);
+
   auto start = std::chrono::system_clock::now();
-  C = strassen(A, B, bls);
+  auto CC = AgreA * AgreB;
   auto end = std::chrono::system_clock::now();
+
   auto elapsed =
+      std::chrono::duration<float, std::chrono::seconds::period>(end - start);
+  std::cout << "Time to solution, " << elapsed.count() << "[s], "
+            << gflops(classical_flops(size), elapsed.count())
+            << ", [Flop/s], Classical " << std::endl;
+
+  start = std::chrono::system_clock::now();
+  C = strassen(A, B, bls);
+  end = std::chrono::system_clock::now();
+  elapsed =
       std::chrono::duration<float, std::chrono::seconds::period>(end - start);
   std::cout << "Time to solution, " << elapsed.count() << "[s], "
             << gflops(strassen_flops(size), elapsed.count())
             << ", [Flop/s], Strassen " << std::endl;
 
-  // auto AgreC = aggregate(C);
+  auto AgreC = aggregate(C);
 
-  // bool b = (CC == AgreC);
-  // if (b)
-  //   std::cout << " It works !\n";
-  // else
-  //   std::cout << " It does not works !\n";
+  bool b = (CC == AgreC);
+  if (b)
+    std::cout << " It works !\n";
+  else
+    std::cout << " It does not works !\n";
 }
