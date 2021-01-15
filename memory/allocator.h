@@ -17,8 +17,9 @@ template <typename T> struct cstandard {
   template <class U> cstandard(const cstandard<U> &) {}
 
   T *allocate(std::size_t size) {
-    void *ptr = std::malloc(size);
-    return static_cast<T *>(ptr);
+    //      return static_cast<value_type*>(::operator new
+    //      (size*sizeof(value_type)));
+    return static_cast<T *>(std::malloc(size * sizeof(value_type)));
   }
   void deallocate(T *ptr, std::size_t n) { std::free(ptr); }
 };

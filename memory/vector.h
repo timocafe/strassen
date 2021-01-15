@@ -40,7 +40,7 @@ public:
   /// \brief usual constructor
   /// The device first divice is selected only one the memory is initialized
   ///
-  explicit vector(size_type n = 0, const value_type &v = value_type())
+  explicit vector(const size_type n = 0, const value_type &v = value_type())
       : data_(n, v) {}
 
   ///
@@ -119,7 +119,7 @@ public:
   /// \brief Return a reference of the data using usual bracket operator syntax
   ///
   inline reference operator[](size_type i) {
-    assert(i < size_ && " Too ambitious! \n");
+    assert(i < data_.size() && " Too ambitious! \n");
     return data_[i];
   }
 
@@ -128,7 +128,7 @@ public:
   /// syntax
   ///
   inline const_reference operator[](size_type i) const {
-    assert(i < size_ && " Too ambitious! \n");
+    assert(i < data_.size() && " Too ambitious! \n");
     return data_[i];
   }
 
@@ -173,7 +173,6 @@ public:
   }
 #endif
 private:
-  size_type size_;                 // size of the vector
   std::vector<T, Allocator> data_; // pointer of the data
 };
 #ifdef CUDA_STRASSEN

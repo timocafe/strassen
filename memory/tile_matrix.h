@@ -29,44 +29,10 @@ public:
   /// compurte the number of tile needed
   ///
   explicit tile_matrix(const size_type rows = 0, const size_type cols = 0,
-                       const size_type tile = 64, const size_type init = 1)
+                       const size_type tile = 64)
       : rows_(rows), cols_(cols), tile_rows_((rows + tile - 1) / tile),
         tile_cols_((rows + tile - 1) / tile), tile_(tile),
-        data_(tile_rows_ * tile_cols_, matrix<value_type>(tile, tile, init)){};
-
-  ///
-  /// \brief copy constructor
-  ///
-  tile_matrix(const tile_matrix &m)
-      : rows_(m.rows_), cols_(m.cols_), tile_rows_(m.tile_rows_),
-        tile_cols_(m.tile_cols_), tile_(m.tile_), data_(m.data_) {}
-
-  ///
-  /// \brief asssign constructor
-  ///
-  tile_matrix &operator=(const tile_matrix &m) {
-    data_ = m.data();
-    // for (int i = 0; i < data_.size(); ++i)
-    //   data_[i] = m.data()[i];
-    return *this;
-  }
-
-  ///
-  /// \brief move constructor, the automatic does not reset rows_ and cols_ to 0
-  /// (no swap)
-  tile_matrix(tile_matrix &&m)
-      : rows_(m.rows_), cols_(m.cols_), tile_rows_(m.tile_rows_),
-        tile_cols_(m.tile_cols_), tile_(m.tile_), data_(std::move(m.data_)){};
-
-  ///
-  /// \brief assign move operator, needed because move constructor
-  ///
-  tile_matrix &operator=(tile_matrix &&m) {
-    data_ = m.data();
-    // for (int i = 0; i < data_.size(); ++i)
-    //   std::swap(data_[i], m.data()[i]);
-    return *this;
-  }
+        data_(tile_rows_ * tile_cols_, matrix<value_type>(tile, tile)){};
 
   ///
   /// \brief Return the number of cols

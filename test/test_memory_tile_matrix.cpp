@@ -57,9 +57,8 @@ TEST(bracketTestTileMatrix, MoveTile) {
   auto original_pointer = A.tile(0, 0).data();
   B = std::move(A.tile(0, 0));
   // check the old tile block, should be dead
-  EXPECT_EQ(A.tile(0, 0).rows(), 0);
-  EXPECT_EQ(A.tile(0, 0).cols(), 0);
-  EXPECT_EQ(A.tile(0, 0).data(), nullptr);
+  EXPECT_EQ(A.tile(0, 0).rows(), 2);
+  EXPECT_EQ(A.tile(0, 0).cols(), 2);
   EXPECT_EQ(B.data(), original_pointer);
 
   EXPECT_EQ(B.cols(), 2);
@@ -218,7 +217,7 @@ TEST(CopyBlockAndMatrix, CopyBlock) {
   A(3, 3) = 33;
 
   // 0 no init so no allocation
-  tile_matrix<float> B(2, 2, 2, 0);
+  tile_matrix<float> B(2, 2, 2);
 
   copy_block(B, A, 1, 1);
   // A is dead now
@@ -236,7 +235,7 @@ TEST(CopyBlockAndMatrix, CopyMatrix) {
   A(1, 1) = 3;
 
   // 0 no init so no allocation
-  tile_matrix<float> B(4, 4, 2, 0);
+  tile_matrix<float> B(4, 4, 2);
 
   copy_matrix(B, A, 0, 0);
   // A is dead now

@@ -61,11 +61,11 @@ int main(int argc, char *argv[]) {
             << gflops(strassen_flops(size), elapsed.count())
             << ", [Flop/s], Strassen " << std::endl;
 
-  auto AgreC = aggregate(C);
-
-  bool b = (CC == AgreC);
-  if (b)
-    std::cout << " It works !\n";
-  else
-    std::cout << " It does not works !\n";
+  //  auto AgreC = aggregate(C);
+  //
+  //  bool b = (CC == AgreC);
+  //  if (b)
+  //    std::cout << " It works !\n";
+  //  else
+  //    std::cout << " It does not works !\n";
 }

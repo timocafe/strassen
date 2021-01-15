@@ -34,43 +34,8 @@ public:
   /// The device first divice is selected only once the memory is initialized
   ///
   explicit matrix(const size_type rows = 0, const size_type cols = 0,
-                  const size_type init = 1)
-      : rows_(rows), cols_(cols), data_(rows * cols * init) {}
-
-  ///
-  /// \brief copy constructor, needed because following standard as soons as
-  /// move assign or move copy is coded the copy destructor is marked deleted
-  ///
-  matrix(const matrix &other)
-      : data_(other.data_), rows_(other.rows()), cols_(other.cols()) {}
-
-  ///
-  /// \brief move constructor, the automatic does not reset rows_ and cols_ to 0
-  /// (no swap)
-  ///
-  matrix(matrix &&other)
-      : data_(std::move(other.data_)), rows_(std::move(other.rows_)),
-        cols_(std::move(other.cols_)) {}
-
-  ///
-  /// \brief assign move operator, needed because move constructor
-  ///
-  matrix &operator=(matrix &&other) {
-    std::swap(data_, other.data_);
-    std::swap(cols_, other.cols_);
-    std::swap(rows_, other.rows_);
-    return *this;
-  }
-
-  ///
-  /// \brief assign operator
-  ///
-  matrix &operator=(const matrix &other) {
-    cols_ = other.cols_;
-    rows_ = other.rows_;
-    data_ = other.data_;
-    return *this;
-  }
+                  const T &t = T())
+      : rows_(rows), cols_(cols), data_(rows * cols, t) {}
 
   ///
   /// \brief initializer constructor {1.,2. ...} col order !
