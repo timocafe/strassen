@@ -56,13 +56,15 @@ public:
            " can not make addition between vector of different size ");
     int b(0);
     /*
-    #ifdef CUDA_STRASSEN
-        if (!gpu_ready_.compare_exchange_strong(b, 1)) {
-          cudaDeviceSynchronize(); // specific jetson
+    #ifdef CUDA_DEVICE
+        if (gpu_ready_.compare_exchange_strong(b, 1)) {
           add_vector_gpu(*this, v);
-          cudaDeviceSynchronize(); // specific jetson
           gpu_ready_ = 0;
         } else {
+          add_vector_cpu(*this, v);
+        }
+    #else
+        add_vector_cpu(*this, v);
     #endif
     */
     add_vector_cpu(*this, v);
@@ -77,15 +79,17 @@ public:
            " can not make substraction between vector of different size ");
     int b(0);
     /*
-    #ifdef CUDA_STRASSEN
-        if (!gpu_ready_.compare_exchange_strong(b, 1)) {
-          cudaDeviceSynchronize(); // specific jetson
-          sub_vector_gpu(*this, v);
-          cudaDeviceSynchronize(); // specific jetson
-          gpu_ready_ = 0;
-        } else
-    #endif
-    */
+#ifdef CUDA_DEVICE
+    if (gpu_ready_.compare_exchange_strong(b, 1)) {
+      sub_vector_gpu(*this, v);
+      gpu_ready_ = 0;
+    } else {
+      sub_vector_cpu(*this, v);
+    }
+#else
+    sub_vector_cpu(*this, v);
+#endif
+*/
     sub_vector_cpu(*this, v);
     return *this;
   }
@@ -175,7 +179,7 @@ public:
 private:
   std::vector<T, Allocator> data_; // pointer of the data
 };
-#ifdef CUDA_STRASSEN
+
 ///
 /// \brief Addition Substraction between two vectors on GPU
 ///
@@ -187,12 +191,31 @@ void helper_add(vector<T, A> &v_y, const vector<T, A> &v_x, const float a) {
   const float alpha = a;
   int incx(1);
   int incy(1);
-  const float *x = v_x.data();
-  float *y = v_y.data();
+
+  static float *x = nullptr;
+  static float *y = nullptr;
+
+  if (init_add_ == false) {
+    CUDA_CALL(cudaMalloc((void **)&x, v_x.memory_allocated()));
+    CUDA_CALL(cudaMalloc((void **)&y, v_y.memory_allocated()));
+    init_add_ = true;
+  }
+
+  CUDA_CALL(cudaMemcpy(x, v_x.data(), v_x.memory_allocated(),
+                       cudaMemcpyHostToDevice));
+  CUDA_CALL(cudaMemcpy(y, v_y.data(), v_y.memory_allocated(),
+                       cudaMemcpyHostToDevice));
+
+  // const float *x = v_x.data();
+  // float *y = v_y.data();
   // y = alpha * x + y
-  cublasSaxpy(handle, n, &alpha, x, incx, y, incy);
+  CUBLAS_STATUS_CALL(cublasSaxpy(handle, n, &alpha, x, incx, y, incy));
+
+  CUDA_CALL(cudaMemcpy(v_y.data(), y, v_y.memory_allocated(),
+                       cudaMemcpyDeviceToHost));
+
   CUBLAS_STATUS_CALL(cublasDestroy(handle));
-  gpu_ready_.fetch_add(1);
+  nadd_gpu += 1;
 }
 
 ///
@@ -210,12 +233,13 @@ template <class T, class A>
 inline void sub_vector_gpu(vector<T, A> &v_y, const vector<T, A> &v_x) {
   helper_add(v_y, v_x, -1.f);
 }
-#endif
+
 ///
 /// \brief Addition between two vectors on CPU
 ///
 template <class T, class A>
 inline void add_vector_cpu(vector<T, A> &v_y, const vector<T, A> &v_x) {
+  nadd_cpu += 1;
   using eigen_vector_type =
       Eigen::Matrix<T, Eigen::Dynamic, 1, Eigen::ColMajor>;
   using const_eigen_vector_type =
@@ -229,6 +253,7 @@ inline void add_vector_cpu(vector<T, A> &v_y, const vector<T, A> &v_x) {
 ///
 template <class T, class A>
 inline void sub_vector_cpu(vector<T, A> &v_y, const vector<T, A> &v_x) {
+  nadd_cpu += 1;
   using eigen_vector_type =
       Eigen::Matrix<T, Eigen::Dynamic, 1, Eigen::ColMajor>;
   using const_eigen_vector_type =

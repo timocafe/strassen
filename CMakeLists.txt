@@ -9,6 +9,14 @@ set(CMAKE_CXX_STANDARD 14)
 include_directories(${PROJECT_SOURCE_DIR})
 
 option (CUDA_STRASSEN " using unify memory CUDA" OFF)
+option (CUDA_DEVICE " using accelerator" OFF)
+
+if(CUDA_DEVICE)
+add_definitions(-DCUDA_DEVICE)
+find_package(CUDA QUIET REQUIRED)
+include_directories(${CUDA_TOOLKIT_INCLUDE})
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};--fmad=true;--default-stream per-thread;-std=c++14;--expt-relaxed-constexpr)
+endif()
 
 if(CUDA_STRASSEN)
 add_definitions(-DCUDA_STRASSEN)
@@ -41,6 +49,6 @@ add_subdirectory(sandbox)
 # Locate GTest
 enable_testing()
 find_package(GTest REQUIRED)
-add_subdirectory(test)
+#add_subdirectory(test)
 
 

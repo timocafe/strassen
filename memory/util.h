@@ -11,7 +11,7 @@
 #include <Eigen/Dense>
 #include <atomic>
 
-#ifdef CUDA_STRASSEN
+#ifdef CUDA_DEVICE
 
 #include <cublas_v2.h>
 #include <cuda.h>
@@ -47,3 +47,9 @@
 template <class T> void print(const T &t) { std::cout << t << std::endl; }
 
 static std::atomic<int> gpu_ready_(0);
+static std::atomic<int> nmul_gpu(0);
+static std::atomic<int> nadd_gpu(0);
+static std::atomic<int> nmul_cpu(0);
+static std::atomic<int> nadd_cpu(0);
+static bool init_add_(false);
+static bool init_mul_(false);

@@ -17,8 +17,8 @@
 //
 
 template <class T>
-tile_matrix<T> strassen(const tile_matrix<T> &A, const tile_matrix<T> &B,
-                        const uint32_t lbs = 64) {
+auto strassen(const tile_matrix<T> &A, const tile_matrix<T> &B,
+              const uint32_t lbs = 64) {
   const uint32_t n = A.rows();
   const uint32_t k = A.rows() / 2;
   if (lbs == n) // limit blocksize
@@ -66,6 +66,15 @@ tile_matrix<T> strassen(const tile_matrix<T> &A, const tile_matrix<T> &B,
   g.run([&] { M7 = strassen(A12 - A22, B21 + B22, lbs); });
 
   g.wait();
+  /*
+  M1 = strassen(A11 + A22, B11 + B22, lbs);
+  M2 = strassen(A21 + A22, B11, lbs);
+  M3 = strassen(A11, B12 - B22, lbs);
+  M4 = strassen(A22, B21 - B11, lbs);
+  M5 = strassen(A11 + A12, B22, lbs);
+  M6 = strassen(A21 - A11, B11 + B12, lbs);
+  M7 = strassen(A12 - A22, B21 + B22, lbs);
+  */
 
   tile_matrix<T> C11(k, k, lbs);
   C11 = M1 + M4;

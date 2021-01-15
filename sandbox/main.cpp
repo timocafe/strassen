@@ -14,6 +14,9 @@
 #include "algo/strassen.h"
 #include "memory/tile_matrix.h"
 
+#include <tbb/task_arena.h>
+#include <tbb/task_group.h>
+
 static const float GIGA = 1000000000;
 
 float classical_flops(float n) { return 2 * n * n * n - n * n; }
@@ -41,14 +44,15 @@ int main(int argc, char *argv[]) {
 
   auto AgreA = aggregate(A);
   auto AgreB = aggregate(B);
+  auto AgreC = aggregate(C);
 
   auto start = std::chrono::system_clock::now();
-  auto CC = AgreA * AgreB;
+  AgreC = AgreA * AgreB;
   auto end = std::chrono::system_clock::now();
 
   auto elapsed =
       std::chrono::duration<float, std::chrono::seconds::period>(end - start);
-  std::cout << "Time to solution, " << elapsed.count() << "[s], "
+  std::cout << " Time to solution, " << elapsed.count() << "[s], "
             << gflops(classical_flops(size), elapsed.count())
             << ", [Flop/s], Classical " << std::endl;
 
@@ -57,15 +61,19 @@ int main(int argc, char *argv[]) {
   end = std::chrono::system_clock::now();
   elapsed =
       std::chrono::duration<float, std::chrono::seconds::period>(end - start);
-  std::cout << "Time to solution, " << elapsed.count() << "[s], "
+  std::cout << " Time to solution, " << elapsed.count() << "[s], "
             << gflops(strassen_flops(size), elapsed.count())
             << ", [Flop/s], Strassen " << std::endl;
 
-  //  auto AgreC = aggregate(C);
-  //
-  //  bool b = (CC == AgreC);
-  //  if (b)
-  //    std::cout << " It works !\n";
-  //  else
-  //    std::cout << " It does not works !\n";
+  auto DD = aggregate(C);
+  bool b = (DD == AgreC);
+  if (b)
+    std::cout << " It works !\n";
+  else
+    std::cout << " It does not works !\n";
+
+  std::cout << " Stats CPU " << nmul_cpu << " *,  " << nadd_cpu << " + "
+            << std::endl;
+  std::cout << " Stats GPU " << nmul_gpu << " *,  " << nadd_gpu << " + "
+            << std::endl;
 }

@@ -8,10 +8,8 @@
 
 #pragma once
 
-#ifdef CUDA_STRASSEN
 #include <cublas_v2.h>
 #include <curand.h>
-#endif
 
 #include <random>
 
@@ -233,11 +231,9 @@ template <class T> void random_gpu(matrix<T> &m) {
 template <class T> void random_cpu(matrix<T> &m) {
   std::random_device rnd_device;
   std::mt19937 mersenne_engine{rnd_device()};
-  std::uniform_real_distribution<> dist{-1., 1.};
+  std::uniform_real_distribution<> dist{1., 2.};
   std::generate(m.begin(), m.end(), [&]() { return dist(mersenne_engine); });
 }
-
-#ifdef CUDA_STRASSEN
 
 template <class T>
 inline void mul_matrix_gpu(matrix<T> &mC, const matrix<T> &mA,
@@ -245,26 +241,27 @@ inline void mul_matrix_gpu(matrix<T> &mC, const matrix<T> &mA,
   using size_type = typename matrix<T>::size_type;
   cublasHandle_t handle;
   CUBLAS_STATUS_CALL(cublasCreate(&handle));
-  /*
-    matrix<T> uA(mA.rows(), mA.cols());
-    matrix<T> uB(mB.rows(), mB.cols());
-    matrix<T> uC(mC.rows(), mC.cols());
+  //  const float *pA = mA.data();
+  //  const float *pB = mB.data();
+  //  float *pC = mC.data();
 
-    uA.prefetch_cpu();
-    uB.prefetch_cpu();
-    uC.prefetch_cpu();
+  static float *pA = nullptr;
+  static float *pB = nullptr;
+  static float *pC = nullptr;
 
-    std::copy(mA.begin(), mA.end(), uA.begin());
-    std::copy(mB.begin(), mB.end(), uB.begin());
-    std::copy(mC.begin(), mC.end(), uC.begin());
+  if (init_mul_ == false) {
+    CUDA_CALL(cudaMalloc((void **)&pA, mA.memory_allocated()));
+    CUDA_CALL(cudaMalloc((void **)&pB, mB.memory_allocated()));
+    CUDA_CALL(cudaMalloc((void **)&pC, mC.memory_allocated()));
+    init_mul_ = true;
+  }
 
-    uA.prefetch_gpu();
-    uB.prefetch_gpu();
-    uC.prefetch_gpu();
-  */
-  const float *pA = mA.data();
-  const float *pB = mB.data();
-  float *pC = mC.data();
+  CUDA_CALL(
+      cudaMemcpy(pA, mA.data(), mA.memory_allocated(), cudaMemcpyHostToDevice));
+  CUDA_CALL(
+      cudaMemcpy(pB, mB.data(), mB.memory_allocated(), cudaMemcpyHostToDevice));
+  CUDA_CALL(
+      cudaMemcpy(pC, mC.data(), mC.memory_allocated(), cudaMemcpyHostToDevice));
 
   float alpha = 1.f;
   float beta = 0.f;
@@ -282,16 +279,18 @@ inline void mul_matrix_gpu(matrix<T> &mC, const matrix<T> &mA,
 
   CUBLAS_STATUS_CALL(cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, k,
                                  &alpha, pA, lda, pB, ldb, &beta, pC, ldc));
-  CUBLAS_STATUS_CALL(cublasDestroy(handle));
 
-  // uC.prefetch_cpu();
-  // std::copy(uC.begin(), uC.end(), mC.begin());
+  CUDA_CALL(
+      cudaMemcpy(mC.data(), pC, mC.memory_allocated(), cudaMemcpyDeviceToHost));
+
+  CUBLAS_STATUS_CALL(cublasDestroy(handle));
+  nmul_gpu += 1;
 }
-#endif
 
 template <class T>
 inline void mul_matrix_cpu(matrix<T> &mC, const matrix<T> &mA,
                            const matrix<T> &mB) {
+  nmul_cpu += 1;
   using value_type = T;
   using eigen_matrix_type = Eigen::Matrix<value_type, Eigen::Dynamic,
                                           Eigen::Dynamic, Eigen::ColMajor>;
@@ -311,15 +310,13 @@ inline auto operator*(const matrix<T> &mA, const matrix<T> &mB) {
   matrix<T> mC(rows, cols);
 
   int b(0);
-#ifdef CUDA_STRASSEN
-  if (!gpu_ready_.compare_exchange_strong(b, 1)) {
+  if (gpu_ready_.compare_exchange_strong(b, 1)) {
     mul_matrix_gpu(mC, mA, mB);
     gpu_ready_ = 0;
   } else
-#else
-  mul_matrix_cpu(mC, mA, mB);
-#endif
-    return std::move(mC);
+    mul_matrix_cpu(mC, mA, mB);
+
+  return std::move(mC);
 }
 
 template <class T>
