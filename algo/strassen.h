@@ -76,7 +76,7 @@ auto strassen(const tile_matrix<T> &A, const tile_matrix<T> &B,
   M7 = strassen(A12 - A22, B21 + B22, lbs);
   */
 
-  const auto & C11 = M1 + M4 - M5 + M7;
+  const auto &C11 = M1 + M4 - M5 + M7;
   const auto &C12 = M3 + M5;
   const auto &C21 = M2 + M4;
   const auto &C22 = M1 - M2 + M3 + M6;
