@@ -9,8 +9,8 @@
 #pragma once
 
 #include "memory/tile_matrix.h"
-#include <tbb/task_group.h>
 #include <tbb/task_arena.h>
+#include <tbb/task_group.h>
 
 //
 // \brief strassen algo with notation wikipedia, lbs indicate the limit block
@@ -19,7 +19,7 @@
 
 template <class T>
 auto classic(const tile_matrix<T> &A, const tile_matrix<T> &B,
-              const uint32_t lbs = 64) {
+             const uint32_t lbs = 64) {
   const uint32_t n = A.rows();
   const uint32_t k = A.rows() / 2;
   if (lbs == n) // limit blocksize
@@ -57,7 +57,6 @@ auto classic(const tile_matrix<T> &A, const tile_matrix<T> &B,
   tile_matrix<T> M7(k, k, lbs);
   tile_matrix<T> M8(k, k, lbs);
 
-  tbb::task_arena limited(2);
   tbb::task_group g;
 
   g.run([&] { M1 = classic(A11, B11, lbs); });
@@ -69,13 +68,13 @@ auto classic(const tile_matrix<T> &A, const tile_matrix<T> &B,
   g.run([&] { M6 = classic(A12, B22, lbs); });
   g.run([&] { M7 = classic(A22, B21, lbs); });
   g.run([&] { M8 = classic(A22, B22, lbs); });
-    
+
   g.wait();
 
-  const auto&  C11 = M1 + M5 ;
-  const auto&  C12 = M2 + M6;
-  const auto&  C21 = M3 + M7;
-  const auto&  C23 = M4 + M8;
+  const auto &C11 = M1 + M5;
+  const auto &C12 = M2 + M6;
+  const auto &C21 = M3 + M7;
+  const auto &C23 = M4 + M8;
 
   tile_matrix<T> C(n, n, lbs);
 
