@@ -46,6 +46,7 @@
 #endif
 template <class T> void print(const T &t) { std::cout << t << std::endl; }
 
+// army of boolean for the static and the scheduling
 static std::atomic<int> gpu_ready_(0);
 static std::atomic<int> nmul_gpu(0);
 static std::atomic<int> nadd_gpu(0);

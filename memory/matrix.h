@@ -8,8 +8,12 @@
 
 #pragma once
 
+#ifdef CUDA_DEVICE
+
 #include <cublas_v2.h>
 #include <curand.h>
+
+#endif
 
 #include <random>
 
@@ -234,7 +238,7 @@ template <class T> void random_cpu(matrix<T> &m) {
   std::uniform_real_distribution<> dist{1., 2.};
   std::generate(m.begin(), m.end(), [&]() { return dist(mersenne_engine); });
 }
-
+#ifdef CUDA_DEVICE
 template <class T>
 inline void mul_matrix_gpu(matrix<T> &mC, const matrix<T> &mA,
                            const matrix<T> &mB) {
@@ -286,7 +290,7 @@ inline void mul_matrix_gpu(matrix<T> &mC, const matrix<T> &mA,
   CUBLAS_STATUS_CALL(cublasDestroy(handle));
   nmul_gpu += 1;
 }
-
+#endif
 template <class T>
 inline void mul_matrix_cpu(matrix<T> &mC, const matrix<T> &mA,
                            const matrix<T> &mB) {
@@ -310,11 +314,15 @@ inline auto operator*(const matrix<T> &mA, const matrix<T> &mB) {
   matrix<T> mC(rows, cols);
 
   int b(0);
+#ifdef CUDA_DEVICE
   if (gpu_ready_.compare_exchange_strong(b, 1)) {
     mul_matrix_gpu(mC, mA, mB);
     gpu_ready_ = 0;
   } else
     mul_matrix_cpu(mC, mA, mB);
+#else
+  mul_matrix_cpu(mC, mA, mB);
+#endif
 
   return std::move(mC);
 }

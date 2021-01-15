@@ -55,19 +55,18 @@ public:
     assert(size() == v.size() &&
            " can not make addition between vector of different size ");
     int b(0);
-    /*
-    #ifdef CUDA_DEVICE
-        if (gpu_ready_.compare_exchange_strong(b, 1)) {
-          add_vector_gpu(*this, v);
-          gpu_ready_ = 0;
-        } else {
-          add_vector_cpu(*this, v);
-        }
-    #else
-        add_vector_cpu(*this, v);
-    #endif
-    */
+
+#ifdef CUDA_DEVICE
+    if (gpu_ready_.compare_exchange_strong(b, 1)) {
+      add_vector_gpu(*this, v);
+      gpu_ready_ = 0;
+    } else {
+      add_vector_cpu(*this, v);
+    }
+#else
     add_vector_cpu(*this, v);
+#endif
+
     return *this;
   }
 
@@ -78,7 +77,7 @@ public:
     assert(size() == v.size() &&
            " can not make substraction between vector of different size ");
     int b(0);
-    /*
+
 #ifdef CUDA_DEVICE
     if (gpu_ready_.compare_exchange_strong(b, 1)) {
       sub_vector_gpu(*this, v);
@@ -89,8 +88,7 @@ public:
 #else
     sub_vector_cpu(*this, v);
 #endif
-*/
-    sub_vector_cpu(*this, v);
+
     return *this;
   }
 
@@ -179,7 +177,7 @@ public:
 private:
   std::vector<T, Allocator> data_; // pointer of the data
 };
-
+#ifdef CUDA_DEVICE
 ///
 /// \brief Addition Substraction between two vectors on GPU
 ///
@@ -233,7 +231,7 @@ template <class T, class A>
 inline void sub_vector_gpu(vector<T, A> &v_y, const vector<T, A> &v_x) {
   helper_add(v_y, v_x, -1.f);
 }
-
+#endif
 ///
 /// \brief Addition between two vectors on CPU
 ///

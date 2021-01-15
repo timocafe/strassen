@@ -17,7 +17,7 @@
 //
 
 template <class T>
-auto strassen(const tile_matrix<T> &A, const tile_matrix<T> &B,
+auto classic(const tile_matrix<T> &A, const tile_matrix<T> &B,
               const uint32_t lbs = 64) {
   const uint32_t n = A.rows();
   const uint32_t k = A.rows() / 2;
@@ -54,39 +54,33 @@ auto strassen(const tile_matrix<T> &A, const tile_matrix<T> &B,
   tile_matrix<T> M5(k, k, lbs);
   tile_matrix<T> M6(k, k, lbs);
   tile_matrix<T> M7(k, k, lbs);
+  tile_matrix<T> M8(k, k, lbs);
 
   tbb::task_group g;
 
-  g.run([&] { M1 = strassen(A11 + A22, B11 + B22, lbs); });
-  g.run([&] { M2 = strassen(A21 + A22, B11, lbs); });
-  g.run([&] { M3 = strassen(A11, B12 - B22, lbs); });
-  g.run([&] { M4 = strassen(A22, B21 - B11, lbs); });
-  g.run([&] { M5 = strassen(A11 + A12, B22, lbs); });
-  g.run([&] { M6 = strassen(A21 - A11, B11 + B12, lbs); });
-  g.run([&] { M7 = strassen(A12 - A22, B21 + B22, lbs); });
+  g.run([&] { M1 = classic(A11, B11, lbs); });
+  g.run([&] { M2 = classic(A11, B12, lbs); });
+  g.run([&] { M3 = classic(A21, B11, lbs); });
+  g.run([&] { M4 = classic(A21, B12, lbs); });
 
+  g.run([&] { M5 = classic(A12, B21, lbs); });
+  g.run([&] { M6 = classic(A12, B22, lbs); });
+  g.run([&] { M7 = classic(A22, B21, lbs); });
+  g.run([&] { M8 = classic(A22, B22, lbs); });
+    
   g.wait();
-  /*
-  M1 = strassen(A11 + A22, B11 + B22, lbs);
-  M2 = strassen(A21 + A22, B11, lbs);
-  M3 = strassen(A11, B12 - B22, lbs);
-  M4 = strassen(A22, B21 - B11, lbs);
-  M5 = strassen(A11 + A12, B22, lbs);
-  M6 = strassen(A21 - A11, B11 + B12, lbs);
-  M7 = strassen(A12 - A22, B21 + B22, lbs);
-  */
 
-  const auto & C11 = M1 + M4 - M5 + M7;
-  const auto &C12 = M3 + M5;
-  const auto &C21 = M2 + M4;
-  const auto &C22 = M1 - M2 + M3 + M6;
+  const auto&  C11 = M1 + M5 ;
+  const auto&  C12 = M2 + M6;
+  const auto&  C21 = M3 + M7;
+  const auto&  C23 = M4 + M8;
 
   tile_matrix<T> C(n, n, lbs);
 
   copy_matrix(C, C11, 0, 0);
   copy_matrix(C, C12, 0, mt);
   copy_matrix(C, C21, mt, 0);
-  copy_matrix(C, C22, mt, mt);
+  copy_matrix(C, C23, mt, mt);
 
   return std::move(C);
 }

@@ -11,7 +11,9 @@
 #include <iomanip>
 #include <iostream>
 
+#include "algo/classic.h"
 #include "algo/strassen.h"
+
 #include "memory/tile_matrix.h"
 
 #include <tbb/task_arena.h>
@@ -65,13 +67,31 @@ int main(int argc, char *argv[]) {
             << gflops(strassen_flops(size), elapsed.count())
             << ", [Flop/s], Strassen " << std::endl;
 
+  start = std::chrono::system_clock::now();
+  auto Cclassic = strassen(A, B, bls);
+  end = std::chrono::system_clock::now();
+  elapsed =
+      std::chrono::duration<float, std::chrono::seconds::period>(end - start);
+  std::cout << " Time to solution, " << elapsed.count() << "[s], "
+            << gflops(classical_flops(size), elapsed.count())
+            << ", [Flop/s], Classic " << std::endl;
+
   auto DD = aggregate(C);
+  auto Dclassic = aggregate(Cclassic);
+
   bool b = (DD == AgreC);
   if (b)
-    std::cout << " It works !\n";
+    std::cout << " Strassen works !\n";
   else
     std::cout << " It does not works !\n";
 
+  b = (DD == Dclassic);
+  if (b)
+    std::cout << " Classic works !\n";
+  else
+    std::cout << " It does not works !\n";
+
+  nmul_cpu--; // case of the classical
   std::cout << " Stats CPU " << nmul_cpu << " *,  " << nadd_cpu << " + "
             << std::endl;
   std::cout << " Stats GPU " << nmul_gpu << " *,  " << nadd_gpu << " + "
