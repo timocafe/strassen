@@ -280,23 +280,23 @@ inline void mul_matrix_gpu(matrix<T> &mC, const matrix<T> &mA,
   using size_type = typename matrix<T>::size_type;
   cublasHandle_t handle;
   CUBLAS_STATUS_CALL(cublasCreate(&handle));
-/*
-  matrix<T> uA(mA.rows(), mA.cols());
-  matrix<T> uB(mB.rows(), mB.cols());
-  matrix<T> uC(mC.rows(), mC.cols());
+  /*
+    matrix<T> uA(mA.rows(), mA.cols());
+    matrix<T> uB(mB.rows(), mB.cols());
+    matrix<T> uC(mC.rows(), mC.cols());
 
-  uA.prefetch_cpu();
-  uB.prefetch_cpu();
-  uC.prefetch_cpu();
+    uA.prefetch_cpu();
+    uB.prefetch_cpu();
+    uC.prefetch_cpu();
 
-  std::copy(mA.begin(), mA.end(), uA.begin());
-  std::copy(mB.begin(), mB.end(), uB.begin());
-  std::copy(mC.begin(), mC.end(), uC.begin());
+    std::copy(mA.begin(), mA.end(), uA.begin());
+    std::copy(mB.begin(), mB.end(), uB.begin());
+    std::copy(mC.begin(), mC.end(), uC.begin());
 
-  uA.prefetch_gpu();
-  uB.prefetch_gpu();
-  uC.prefetch_gpu();
-*/
+    uA.prefetch_gpu();
+    uB.prefetch_gpu();
+    uC.prefetch_gpu();
+  */
   const float *pA = mA.data();
   const float *pB = mB.data();
   float *pC = mC.data();
@@ -319,8 +319,8 @@ inline void mul_matrix_gpu(matrix<T> &mC, const matrix<T> &mA,
                                  &alpha, pA, lda, pB, ldb, &beta, pC, ldc));
   CUBLAS_STATUS_CALL(cublasDestroy(handle));
 
-//uC.prefetch_cpu();
-//std::copy(uC.begin(), uC.end(), mC.begin());
+  // uC.prefetch_cpu();
+  // std::copy(uC.begin(), uC.end(), mC.begin());
 }
 #endif
 

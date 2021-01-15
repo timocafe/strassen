@@ -10,34 +10,56 @@
 
 #include "memory/util.h"
 
-template <class T> class cstandard : public std::allocator<T> {
-public:
-  typedef typename std::allocator<T>::size_type size_type;
+template <typename T> struct cstandard {
+  using value_type = T;
 
-  void *allocate_policy(size_type size) {
+  cstandard() = default;
+  template <class U> cstandard(const cstandard<U> &) {}
+
+  T *allocate(std::size_t size) {
     void *ptr = std::malloc(size);
-    return ptr;
+    return static_cast<T *>(ptr);
   }
-
-  void deallocate_policy(void *ptr) { std::free(ptr); }
+  void deallocate(T *ptr, std::size_t n) { std::free(ptr); }
 };
 
-#ifdef CUDA_STRASSEN
-                                                                                          
-template <class T> class cuda_unify : public std::allocator<T> {
-public:
-  typedef typename std::allocator<T>::size_type size_type;
+template <typename T, typename U>
+inline bool operator==(const cstandard<T> &, const cstandard<U> &) {
+  return true;
+}
 
-  void *allocate_policy(size_type size) {
+template <typename T, typename U>
+inline bool operator!=(const cstandard<T> &a, const cstandard<U> &b) {
+  return !(a == b);
+}
+
+#ifdef CUDA_STRASSEN
+
+template <typename T> struct cuda_unify {
+  using value_type = T;
+
+  cuda_unify() = default;
+  template <class U> cuda_unify(const cuda_unify<U> &) {}
+
+  T *allocate(std::size_t size) {
     void *ptr = nullptr;
     CUDA_CALL(cudaMallocManaged(&ptr, size));
     std::memset(ptr, 0, size);
     cudaDeviceSynchronize(); // specific jetson
-    return ptr;
+    return static_cast<T *>(ptr);
   }
-
-  void deallocate_policy(void *ptr) { std::free(ptr); }
+  void deallocate(T *ptr, std::size_t n) { cudaFree(ptr); }
 };
+
+template <typename T, typename U>
+inline bool operator==(const cuda_unify<T> &, const cuda_unify<U> &) {
+  return true;
+}
+
+template <typename T, typename U>
+inline bool operator!=(const cuda_unify<T> &a, const cuda_unify<U> &b) {
+  return !(a == b);
+}
 
 #endif
 
