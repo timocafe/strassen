@@ -152,12 +152,12 @@ public:
   ///
   /// \brief Return the vector of tile
   ///
-  const std::vector<matrix<value_type>> &data() const { return data_; }
+  const vector<matrix<value_type>> &data() const { return data_; }
 
   ///
   /// \brief Return the vector of tile
   ///
-  std::vector<matrix<value_type>> &data() { return data_; }
+  vector<matrix<value_type>> &data() { return data_; }
 
   ///
   /// \brief Addition between two tile_matrix
@@ -197,7 +197,7 @@ private:
   size_type tile_rows_;
   size_type tile_cols_;
   size_type tile_;
-  std::vector<matrix<value_type>> data_;
+  vector<matrix<value_type>> data_;
 };
 
 ///
@@ -219,17 +219,15 @@ template <class T> void random(tile_matrix<T> &m) {
 }
 
 template <class T>
-inline auto operator+(const tile_matrix<T> &mA, const tile_matrix<T> &mB) {
-  tile_matrix<float> m(mA); // copy constructor
-  m += mB;
-  return std::move(m);
+inline auto operator+(tile_matrix<T> mA, const tile_matrix<T> &mB) {
+  mA += mB;
+  return std::move(mA);
 }
 
 template <class T>
-inline auto operator-(const tile_matrix<T> &mA, const tile_matrix<T> &mB) {
-  tile_matrix<float> m(mA); // copy constructor
-  m -= mB;
-  return std::move(m);
+inline auto operator-(tile_matrix<T> mA, const tile_matrix<T> &mB) {
+  mA -= mB;
+  return std::move(mA);
 }
 
 template <class T>

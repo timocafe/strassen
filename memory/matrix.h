@@ -24,6 +24,7 @@ public:
   typedef uint32_t size_type;
   typedef T value_type;
   typedef value_type *pointer;
+  typedef const value_type *const_pointer;
   typedef pointer iterator;
   typedef const pointer const_iterator;
   typedef value_type &reference;
@@ -113,12 +114,12 @@ public:
   ///
   /// \brief Return the const data pointer
   ///
-  auto data() const { return data_.data(); }
+  const_pointer data() const { return data_.data(); }
 
   ///
   /// \brief Return the data pointer
   ///
-  auto data() { return data_.data(); }
+  pointer data() { return data_.data(); }
 
   ///
   /// \brief Return the total number of element
@@ -205,7 +206,7 @@ public:
 private:
   size_type rows_;
   size_type cols_;
-  vector<value_type, allocator_policy<value_type>> data_;
+  vector<value_type> data_;
 };
 
 ///
@@ -279,10 +280,10 @@ inline void mul_matrix_gpu(matrix<T> &mC, const matrix<T> &mA,
   using size_type = typename matrix<T>::size_type;
   cublasHandle_t handle;
   CUBLAS_STATUS_CALL(cublasCreate(&handle));
-
-  matrix<T, cuda_unify> uA(mA.rows(), mA.cols());
-  matrix<T, cuda_unify> uB(mB.rows(), mB.cols());
-  matrix<T, cuda_unify> uC(mC.rows(), mC.cols());
+/*
+  matrix<T> uA(mA.rows(), mA.cols());
+  matrix<T> uB(mB.rows(), mB.cols());
+  matrix<T> uC(mC.rows(), mC.cols());
 
   uA.prefetch_cpu();
   uB.prefetch_cpu();
@@ -295,10 +296,10 @@ inline void mul_matrix_gpu(matrix<T> &mC, const matrix<T> &mA,
   uA.prefetch_gpu();
   uB.prefetch_gpu();
   uC.prefetch_gpu();
-
-  float *pA = uA.data();
-  float *pB = uB.data();
-  float *pC = uC.data();
+*/
+  const float *pA = mA.data();
+  const float *pB = mB.data();
+  float *pC = mC.data();
 
   float alpha = 1.f;
   float beta = 0.f;
@@ -318,8 +319,8 @@ inline void mul_matrix_gpu(matrix<T> &mC, const matrix<T> &mA,
                                  &alpha, pA, lda, pB, ldb, &beta, pC, ldc));
   CUBLAS_STATUS_CALL(cublasDestroy(handle));
 
-  uC.prefetch_cpu();
-  std::copy(uC.begin(), uC.end(), mC.begin());
+//uC.prefetch_cpu();
+//std::copy(uC.begin(), uC.end(), mC.begin());
 }
 #endif
 

@@ -31,6 +31,8 @@ template <class T, class Allocator = allocator_policy<T>> class vector {
   using size_type = typename std::vector<T, Allocator>::size_type;
   using reference = typename std::vector<T, Allocator>::reference;
   using const_reference = typename std::vector<T, Allocator>::const_reference;
+  using const_pointer = typename std::vector<T, Allocator>::const_pointer;
+  using pointer = typename std::vector<T, Allocator>::pointer;
   using value_type = T;
 
 public:
@@ -142,12 +144,12 @@ public:
   ///
   /// \brief Return the data pointer
   ///
-  auto data() const { return data_.data(); }
+  const_pointer data() const { return data_.data(); }
 
   ///
   /// \brief Return the data pointer need for copy block/matrix
   ///
-  auto data() { return data_.data(); }
+  pointer data() { return data_.data(); }
 
   ///
   /// \brief Return the memory allocated
