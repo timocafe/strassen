@@ -213,7 +213,7 @@ inline void copy_block(tile_matrix<T> &m1, const tile_matrix<T> &m2, uint32_t x,
   uint32_t ncols = (m2.tile_cols() == 1) ? 1 : m2.tile_cols() / 2;
   for (int i = 0; i < ncols; ++i)
     for (int j = 0; j < nrows; ++j) {
-      m1.tile(i, j) = m2.tile(i + x, j + y);
+      m1.tile(i, j) = std::move(m2.tile(i + x, j + y));
       //    m1.tile(i, j).data(m2.tile(i + x, j + y).data());
       //    m1.tile(i, j).size(m2.tile(i + x, j + y).size());
     }
@@ -230,7 +230,7 @@ inline void copy_matrix(tile_matrix<T> &m1, const tile_matrix<T> &m2,
   uint32_t ncols = m2.tile_cols();
   for (int i = 0; i < ncols; ++i)
     for (int j = 0; j < nrows; ++j) {
-      m1.tile(i + x, j + y) = m2.tile(i, j);
+      m1.tile(i + x, j + y) = std::move(m2.tile(i, j));
       //    m1.tile(i + x, j + y).data(m2.tile(i, j).data());
       //    m1.tile(i + x, j + y).size(m2.tile(i, j).size());
     }

@@ -59,13 +59,11 @@ int main(int argc, char *argv[]) {
   random(A);
   random(B);
 
-  //  auto AgreA = aggregate(A);
-  //  auto AgreB = aggregate(B);
-  //  auto AgreC = aggregate(C);
-  //
-  //  auto start = std::chrono::system_clock::now();
-  //  AgreC = AgreA * AgreB;
-  //  auto end = std::chrono::system_clock::now();
+  auto AgreA = aggregate(A);
+  auto AgreB = aggregate(B);
+  auto AgreC = aggregate(C);
+
+  AgreC = AgreA * AgreB;
 
   auto start = std::chrono::system_clock::now();
   C = strassen(A, B, bls);
@@ -89,20 +87,20 @@ int main(int argc, char *argv[]) {
             << ", [Flop/s], Classic " << std::endl;
 
   print_counter("Classic");
-  //  reset_counter();
-  //
-  //  auto DD = aggregate(C);
-  //  auto Dclassic = aggregate(Cclassic);
-  //
-  //  bool b = (DD == AgreC);
-  //  if (b)
-  //    std::cout << " Strassen works !\n";
-  //  else
-  //    std::cout << " It does not works !\n";
-  //
-  //  b = (DD == Dclassic);
-  //  if (b)
-  //    std::cout << " Classic works !\n";
-  //  else
-  //    std::cout << " It does not works !\n";
+  reset_counter();
+
+  auto DD = aggregate(C);
+  auto Dclassic = aggregate(Cclassic);
+
+  bool b = (DD == AgreC);
+  if (b)
+    std::cout << " Strassen works !\n";
+  else
+    std::cout << " It does not works !\n";
+
+  b = (DD == Dclassic);
+  if (b)
+    std::cout << " Classic works !\n";
+  else
+    std::cout << " It does not works !\n";
 }

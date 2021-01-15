@@ -10,6 +10,7 @@
 
 #include "memory/tile_matrix.h"
 #include <tbb/task_group.h>
+#include <tbb/task_arena.h>
 
 //
 // \brief strassen algo with notation wikipedia, lbs indicate the limit block
@@ -56,6 +57,7 @@ auto classic(const tile_matrix<T> &A, const tile_matrix<T> &B,
   tile_matrix<T> M7(k, k, lbs);
   tile_matrix<T> M8(k, k, lbs);
 
+  tbb::task_arena limited(2);
   tbb::task_group g;
 
   g.run([&] { M1 = classic(A11, B11, lbs); });
