@@ -58,7 +58,6 @@ template <typename T, typename U>
 inline bool operator!=(const cuda_unify<T> &a, const cuda_unify<U> &b) {
   return !(a == b);
 }
-
 #endif
 
 #ifdef CUDA_STRASSEN

@@ -71,17 +71,17 @@ auto classic(const tile_matrix<T> &A, const tile_matrix<T> &B,
 
   g.wait();
 
-  const auto &C11 = M1 + M5;
-  const auto &C12 = M2 + M6;
-  const auto &C21 = M3 + M7;
-  const auto &C23 = M4 + M8;
+  M1 += M5;
+  M2 += M6;
+  M3 += M7;
+  M4 += M8;
 
   tile_matrix<T> C(n, n, lbs);
 
-  copy_matrix(C, C11, 0, 0);
-  copy_matrix(C, C12, 0, mt);
-  copy_matrix(C, C21, mt, 0);
-  copy_matrix(C, C23, mt, mt);
+  copy_matrix(C, M1, 0, 0);
+  copy_matrix(C, M2, 0, mt);
+  copy_matrix(C, M3, mt, 0);
+  copy_matrix(C, M4, mt, mt);
 
   return std::move(C);
 }

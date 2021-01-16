@@ -118,12 +118,12 @@ public:
   ///
   /// \brief Return the vector of tile
   ///
-  const vector<matrix<value_type>> &data() const { return data_; }
+  const std::vector<matrix<value_type>> &data() const { return data_; }
 
   ///
   /// \brief Return the vector of tile
   ///
-  vector<matrix<value_type>> &data() { return data_; }
+  std::vector<matrix<value_type>> &data() { return data_; }
 
   ///
   /// \brief Addition between two tile_matrix
@@ -163,7 +163,7 @@ private:
   size_type tile_rows_;
   size_type tile_cols_;
   size_type tile_;
-  vector<matrix<value_type>> data_;
+  std::vector<matrix<value_type>> data_;
 };
 
 ///

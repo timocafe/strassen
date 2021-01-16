@@ -33,6 +33,7 @@ include_directories(${TBB_INCLUDE_DIRS})
 include(ClangFormat)
 clangformat_setup(
   sandbox/main.cpp
+  sandbox/sgemm.cpp
   memory/vector.h
   memory/matrix.h
   memory/tile_matrix.h
