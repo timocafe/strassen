@@ -16,7 +16,6 @@
 // \brief strassen algo with notation wikipedia, lbs indicate the limit block
 // size to stop the reccursive algo
 //
-
 template <class T>
 auto classic(const tile_matrix<T> &A, const tile_matrix<T> &B,
              const uint32_t lbs = 64) {
