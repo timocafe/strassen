@@ -11,6 +11,8 @@
 #include <random>
 #include <vector>
 
+#include <tbb/tbb.h>
+
 #include "memory/matrix.h"
 #include "memory/util.h"
 #include "memory/vector.h"
@@ -55,11 +57,20 @@ public:
   inline size_type tile_rows() const { return tile_rows_; }
 
   ///
+  /// \brief Return  a tile from the vector API
+  ///
+  inline matrix<T> &operator[](size_type i) { return data_[i]; }
+
+  ///
+  /// \brief Return  a tile from the vector API
+  ///
+  const inline matrix<T> &operator[](size_type i) const { return data_[i]; }
+
+  ///
   /// \brief Return a reference of the data using usual bracket operator syntax,
   /// cols order, first get the tile and then the data (col order) for the
   /// corresponding tile
   ///
-
   inline reference operator()(size_type i, size_type j) {
     // get the tile
     size_type ti = i / tile_;
@@ -74,7 +85,6 @@ public:
   /// \brief Return a const reference of the data using usual bracket operator,
   /// cols order syntax
   ///
-
   inline const_reference operator()(size_type i, size_type j) const {
     // get the tile
     size_type ti = i / tile_;
@@ -179,9 +189,11 @@ std::ostream &operator<<(std::ostream &out, const tile_matrix<T> &b) {
 /// \brief fill up the matrix with random number
 ///
 template <class T> void random(tile_matrix<T> &m) {
-  auto &data = m.data();
-  std::for_each(std::begin(data), std::end(data),
-                [&](auto &it) { random(it); });
+  parallel_for(tbb::blocked_range<size_t>(0, m.size()),
+               [&](const tbb::blocked_range<size_t> &r) {
+                 for (size_t i = r.begin(); i != r.end(); ++i)
+                   random(m[i]);
+               });
 }
 
 template <class T>

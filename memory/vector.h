@@ -54,19 +54,7 @@ public:
   vector &operator+=(const vector &v) {
     assert(size() == v.size() &&
            " can not make addition between vector of different size ");
-    int b(0);
-/*
-#ifdef CUDA_DEVICE
-    if (gpu_ready_.compare_exchange_strong(b, 1)) {
-      add_vector_gpu(*this, v);
-      gpu_ready_ = 0;
-    } else {
-      add_vector_cpu(*this, v);
-    }
-#else
-    add_vector_cpu(*this, v);
-#endif
-*/
+
     add_vector_cpu(*this, v);
 
     return *this;
@@ -76,20 +64,11 @@ public:
   /// \brief substraction between two vectors
   ///
   vector &operator-=(const vector &v) {
+    cudaDeviceSynchronize();
     assert(size() == v.size() &&
            " can not make substraction between vector of different size ");
-    int b(0);
 
-#ifdef CUDA_DEVICE
-    if (gpu_ready_.compare_exchange_strong(b, 1)) {
-      sub_vector_gpu(*this, v);
-      gpu_ready_ = 0;
-    } else {
-      sub_vector_cpu(*this, v);
-    }
-#else
     sub_vector_cpu(*this, v);
-#endif
 
     return *this;
   }

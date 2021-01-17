@@ -213,30 +213,27 @@ inline void mul_matrix_gpu(matrix<T> &mC, const matrix<T> &mA,
   using size_type = typename matrix<T>::size_type;
   cublasHandle_t handle;
   CUBLAS_STATUS_CALL(cublasCreate(&handle));
-  const float *pA = mA.data();
-  const float *pB = mB.data();
-  float *pC = mC.data();
+  // const float *pA = mA.data();
+  // const float *pB = mB.data();
+  // float *pC = mC.data();
 
-  //  static float *pA = nullptr;
-  //  static float *pB = nullptr;
-  //  static float *pC = nullptr;
-  //
-  //  if (init_mul_ == false) {
-  //    CUDA_CALL(cudaMalloc((void **)&pA, mA.memory_allocated()));
-  //    CUDA_CALL(cudaMalloc((void **)&pB, mB.memory_allocated()));
-  //    CUDA_CALL(cudaMalloc((void **)&pC, mC.memory_allocated()));
-  //    init_mul_ = true;
-  //  }
-  //
-  //  CUDA_CALL(
-  //      cudaMemcpy(pA, mA.data(), mA.memory_allocated(),
-  //      cudaMemcpyHostToDevice));
-  //  CUDA_CALL(
-  //      cudaMemcpy(pB, mB.data(), mB.memory_allocated(),
-  //      cudaMemcpyHostToDevice));
-  //  CUDA_CALL(
-  //      cudaMemcpy(pC, mC.data(), mC.memory_allocated(),
-  //      cudaMemcpyHostToDevice));
+  static float *pA = nullptr;
+  static float *pB = nullptr;
+  static float *pC = nullptr;
+
+  if (init_mul_ == false) {
+    CUDA_CALL(cudaMalloc((void **)&pA, mA.memory_allocated()));
+    CUDA_CALL(cudaMalloc((void **)&pB, mB.memory_allocated()));
+    CUDA_CALL(cudaMalloc((void **)&pC, mC.memory_allocated()));
+    init_mul_ = true;
+  }
+
+  CUDA_CALL(
+      cudaMemcpy(pA, mA.data(), mA.memory_allocated(), cudaMemcpyHostToDevice));
+  CUDA_CALL(
+      cudaMemcpy(pB, mB.data(), mB.memory_allocated(), cudaMemcpyHostToDevice));
+  CUDA_CALL(
+      cudaMemcpy(pC, mC.data(), mC.memory_allocated(), cudaMemcpyHostToDevice));
 
   float alpha = 1.f;
   float beta = 0.f;
@@ -254,10 +251,9 @@ inline void mul_matrix_gpu(matrix<T> &mC, const matrix<T> &mA,
 
   CUBLAS_STATUS_CALL(cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, k,
                                  &alpha, pA, lda, pB, ldb, &beta, pC, ldc));
-
-  //  CUDA_CALL(
-  //      cudaMemcpy(mC.data(), pC, mC.memory_allocated(),
-  //      cudaMemcpyDeviceToHost));
+  // cudaDeviceSynchronize();
+  CUDA_CALL(
+      cudaMemcpy(mC.data(), pC, mC.memory_allocated(), cudaMemcpyDeviceToHost));
 
   CUBLAS_STATUS_CALL(cublasDestroy(handle));
   nmul_gpu += 1;
@@ -284,7 +280,7 @@ inline auto operator*(const matrix<T> &mA, const matrix<T> &mB) {
   size_type rows = mA.rows();
   size_type cols = mB.cols();
   matrix<T> mC(rows, cols);
-    
+
   int b(0);
 #ifdef CUDA_DEVICE
   if (gpu_ready_.compare_exchange_strong(b, 1)) {
