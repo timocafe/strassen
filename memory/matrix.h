@@ -185,38 +185,6 @@ std::ostream &operator<<(std::ostream &out, const matrix<T> &b) {
   return out;
 }
 
-template <class T>
-inline void copy_block(matrix<T> &m1, const matrix<T> &m2, uint32_t x,
-                       uint32_t y) {
-
-  using eigen_vector_type =
-      Eigen::Matrix<T, Eigen::Dynamic, 1, Eigen::ColMajor>;
-  using const_eigen_vector_type =
-      const Eigen::Matrix<T, Eigen::Dynamic, 1, Eigen::ColMajor>;
-  const uint32_t size = m1.rows();
-  const uint32_t size_m2 = 2 * m1.rows();
-  for (int i = 0; i < m1.cols(); ++i) {
-    Eigen::Map<eigen_vector_type>(m1.data() + i * size, size) =
-        Eigen::Map<const_eigen_vector_type>((&m2(x, y) + i * size_m2), size);
-  }
-}
-
-template <class T>
-inline void copy_matrix(matrix<T> &m1, const matrix<T> &m2, uint32_t x,
-                        uint32_t y) {
-
-  using eigen_vector_type =
-      Eigen::Matrix<T, Eigen::Dynamic, 1, Eigen::ColMajor>;
-  using const_eigen_vector_type =
-      const Eigen::Matrix<T, Eigen::Dynamic, 1, Eigen::ColMajor>;
-  const uint32_t size = m2.rows();
-  const uint32_t size_m2 = 2 * m2.rows();
-  for (int i = 0; i < m2.cols(); ++i) {
-    Eigen::Map<eigen_vector_type>((&m1(x, y) + i * size_m2), size) =
-        Eigen::Map<const_eigen_vector_type>(m2.data() + i * size, size);
-  }
-}
-
 template <class T> void random(matrix<T> &m) { random_cpu(m); }
 #ifdef CUDA_STRASSEN
 template <class T> void random_gpu(matrix<T> &m) {
@@ -245,27 +213,30 @@ inline void mul_matrix_gpu(matrix<T> &mC, const matrix<T> &mA,
   using size_type = typename matrix<T>::size_type;
   cublasHandle_t handle;
   CUBLAS_STATUS_CALL(cublasCreate(&handle));
-  //  const float *pA = mA.data();
-  //  const float *pB = mB.data();
-  //  float *pC = mC.data();
+  const float *pA = mA.data();
+  const float *pB = mB.data();
+  float *pC = mC.data();
 
-  static float *pA = nullptr;
-  static float *pB = nullptr;
-  static float *pC = nullptr;
-
-  if (init_mul_ == false) {
-    CUDA_CALL(cudaMalloc((void **)&pA, mA.memory_allocated()));
-    CUDA_CALL(cudaMalloc((void **)&pB, mB.memory_allocated()));
-    CUDA_CALL(cudaMalloc((void **)&pC, mC.memory_allocated()));
-    init_mul_ = true;
-  }
-
-  CUDA_CALL(
-      cudaMemcpy(pA, mA.data(), mA.memory_allocated(), cudaMemcpyHostToDevice));
-  CUDA_CALL(
-      cudaMemcpy(pB, mB.data(), mB.memory_allocated(), cudaMemcpyHostToDevice));
-  CUDA_CALL(
-      cudaMemcpy(pC, mC.data(), mC.memory_allocated(), cudaMemcpyHostToDevice));
+  //  static float *pA = nullptr;
+  //  static float *pB = nullptr;
+  //  static float *pC = nullptr;
+  //
+  //  if (init_mul_ == false) {
+  //    CUDA_CALL(cudaMalloc((void **)&pA, mA.memory_allocated()));
+  //    CUDA_CALL(cudaMalloc((void **)&pB, mB.memory_allocated()));
+  //    CUDA_CALL(cudaMalloc((void **)&pC, mC.memory_allocated()));
+  //    init_mul_ = true;
+  //  }
+  //
+  //  CUDA_CALL(
+  //      cudaMemcpy(pA, mA.data(), mA.memory_allocated(),
+  //      cudaMemcpyHostToDevice));
+  //  CUDA_CALL(
+  //      cudaMemcpy(pB, mB.data(), mB.memory_allocated(),
+  //      cudaMemcpyHostToDevice));
+  //  CUDA_CALL(
+  //      cudaMemcpy(pC, mC.data(), mC.memory_allocated(),
+  //      cudaMemcpyHostToDevice));
 
   float alpha = 1.f;
   float beta = 0.f;
@@ -284,8 +255,9 @@ inline void mul_matrix_gpu(matrix<T> &mC, const matrix<T> &mA,
   CUBLAS_STATUS_CALL(cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, k,
                                  &alpha, pA, lda, pB, ldb, &beta, pC, ldc));
 
-  CUDA_CALL(
-      cudaMemcpy(mC.data(), pC, mC.memory_allocated(), cudaMemcpyDeviceToHost));
+  //  CUDA_CALL(
+  //      cudaMemcpy(mC.data(), pC, mC.memory_allocated(),
+  //      cudaMemcpyDeviceToHost));
 
   CUBLAS_STATUS_CALL(cublasDestroy(handle));
   nmul_gpu += 1;
