@@ -55,7 +55,7 @@ public:
     assert(size() == v.size() &&
            " can not make addition between vector of different size ");
     int b(0);
-
+/*
 #ifdef CUDA_DEVICE
     if (gpu_ready_.compare_exchange_strong(b, 1)) {
       add_vector_gpu(*this, v);
@@ -66,6 +66,8 @@ public:
 #else
     add_vector_cpu(*this, v);
 #endif
+*/
+    add_vector_cpu(*this, v);
 
     return *this;
   }

@@ -312,7 +312,7 @@ inline auto operator*(const matrix<T> &mA, const matrix<T> &mB) {
   size_type rows = mA.rows();
   size_type cols = mB.cols();
   matrix<T> mC(rows, cols);
-
+    
   int b(0);
 #ifdef CUDA_DEVICE
   if (gpu_ready_.compare_exchange_strong(b, 1)) {
@@ -323,7 +323,6 @@ inline auto operator*(const matrix<T> &mA, const matrix<T> &mB) {
 #else
   mul_matrix_cpu(mC, mA, mB);
 #endif
-
   return std::move(mC);
 }
 
