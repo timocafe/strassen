@@ -76,7 +76,6 @@ inline const char *_cudaGetErrorEnum(cublasStatus_t error) {
     }                                                                          \
   } while (0)
 
-#endif
 template <class T> void print(const T &t) { std::cout << t << std::endl; }
 
 class singleton {
@@ -100,6 +99,8 @@ protected:
 };
 
 std::shared_ptr<singleton> singleton::singleton_ = NULL;
+
+#endif
 
 // army of boolean for the static and the scheduling
 static std::atomic<int> gpu_ready_(0);

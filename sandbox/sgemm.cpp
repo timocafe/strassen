@@ -52,7 +52,12 @@ int main(int argc, char *argv[]) {
 
   {
     auto start = std::chrono::system_clock::now();
+#ifdef CUDA_DEVICE
     mul_matrix_gpu(C, A, B);
+#else
+    mul_matrix_cpu(C, A, B);
+#endif
+
     auto end = std::chrono::system_clock::now();
     auto elapsed =
         std::chrono::duration<float, std::chrono::seconds::period>(end - start);

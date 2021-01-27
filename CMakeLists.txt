@@ -49,6 +49,6 @@ add_subdirectory(sandbox)
 # Locate GTest
 enable_testing()
 find_package(GTest REQUIRED)
-#add_subdirectory(test)
+add_subdirectory(test)
 
 
