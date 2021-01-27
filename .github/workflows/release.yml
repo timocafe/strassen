@@ -17,7 +17,7 @@ jobs:
       with:
         cmake-version: '3.16.x'
     - name: Install gtest manually
-      run: sudo apt-get install libgtest-dev && cd /usr/src/gtest && sudo cmake CMakeLists.txt -DBUILD_GMOCK=OFF -DINSTALL_GTEST=ON && sudo make install 
+      run: sudo apt-get install libgtest-dev && cd /usr/src/gtest && sudo mkdir build && cd build && sudo cmake .. -DBUILD_GMOCK=OFF -DINSTALL_GTEST=ON && sudo make install 
     - name: install Eigen and TBB
       run: sudo apt-get install libtbb-dev libeigen3-dev
     - uses: actions/checkout@v1
