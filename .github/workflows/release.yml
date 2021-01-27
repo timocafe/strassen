@@ -18,12 +18,12 @@ jobs:
         cmake-version: '3.16.x'
     - name: Install gtest manually
       run: git clone https://github.com/google/googletest.git -b release-1.10.0  && cd googletest && mkdir build && cd build && cmake .. -DBUILD_GMOCK=OFF -DINSTALL_GTEST=ON && sudo make install 
-    - name: install Eigen and TBB
+    - name: Install Eigen and TBB
       run: sudo apt-get install libtbb-dev libeigen3-dev
     - uses: actions/checkout@v1
-    - name: configure
+    - name: Configure
       run: mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release ..
-    - name: make
+    - name: Make
       run: cd build && make
     - name: Run Test
       run: cd build && ctest
