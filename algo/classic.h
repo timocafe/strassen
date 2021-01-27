@@ -17,7 +17,6 @@
 //  const tile_matrix<T> &A_, &B_;
 //  const uint32_t lbs_;
 //  tile_matrix<T> &C_;
-//
 //  classic_task_t(const tile_matrix<T> &A, const tile_matrix<T> &B,
 //                 tile_matrix<T> &C, const uint32_t lbs)
 //      : A_(A), B_(B), C_(C), lbs_(lbs) {}
