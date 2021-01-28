@@ -37,6 +37,16 @@ public:
         data_(tile_rows_ * tile_cols_, matrix<value_type>(tile, tile)){};
 
   ///
+  /// \brief usual constructor
+  /// compurte the number of tile needed
+  ///
+  explicit tile_matrix(const size_type rows, const size_type cols,
+                       const size_type tile, bool b)
+      : rows_(rows), cols_(cols), tile_rows_((rows + tile - 1) / tile),
+        tile_cols_((rows + tile - 1) / tile), tile_(tile),
+        data_(tile_rows_ * tile_cols_, matrix<value_type>(0, 0)){};
+
+  ///
   /// \brief Return the number of cols
   ///
   inline size_type cols() const { return cols_; }
@@ -240,6 +250,33 @@ inline void copy_matrix(tile_matrix<T> &m1, const tile_matrix<T> &m2,
   for (int i = 0; i < ncols; ++i)
     for (int j = 0; j < nrows; ++j)
       m1.tile(i + x, j + y) = std::move(m2.tile(i, j));
+}
+
+///
+/// \brief add matrix to an other one subblock
+/// It just copy adress and block size
+///
+template <class T>
+inline void tile_add_matrix(tile_matrix<T> &m1, const tile_matrix<T> &m2,
+                            uint32_t x, uint32_t y) {
+  uint32_t nrows = m2.tile_rows();
+  uint32_t ncols = m2.tile_cols();
+  for (int i = 0; i < ncols; ++i)
+    for (int j = 0; j < nrows; ++j)
+      m1.tile(i + x, j + y) += m2.tile(i, j);
+}
+
+/// \brief sub matrix to an other one subblock
+/// It just copy adress and block size
+///
+template <class T>
+inline void tile_sub_matrix(tile_matrix<T> &m1, const tile_matrix<T> &m2,
+                            uint32_t x, uint32_t y) {
+  uint32_t nrows = m2.tile_rows();
+  uint32_t ncols = m2.tile_cols();
+  for (int i = 0; i < ncols; ++i)
+    for (int j = 0; j < nrows; ++j)
+      m1.tile(i + x, j + y) -= m2.tile(i, j);
 }
 
 ///
