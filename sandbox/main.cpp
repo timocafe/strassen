@@ -35,6 +35,8 @@ void reset_counter() {
   nadd_cpu = 0;
   nmul_gpu = 0;
   nadd_gpu = 0;
+  time_mul_cpu = 0;
+  time_mul_cpu = 0;
 }
 
 void print_counter(std::string algo) {
@@ -42,6 +44,8 @@ void print_counter(std::string algo) {
   std::cout << " Stats CPU " << nmul_cpu << " *,  " << nadd_cpu << " + "
             << std::endl;
   std::cout << " Stats GPU " << nmul_gpu << " *,  " << nadd_gpu << " + "
+            << std::endl;
+  std::cout << " Time mul " << time_mul_cpu << " Time add " << time_add_cpu
             << std::endl;
 }
 
@@ -68,13 +72,14 @@ int main(int argc, char *argv[]) {
 
   AgreC = AgreA * AgreB;
 
+  reset_counter();
+
   auto start = std::chrono::system_clock::now();
   C = strassen(A, B, bls);
   auto end = std::chrono::system_clock::now();
-  auto elapsed =
-      std::chrono::duration<float, std::chrono::seconds::period>(end - start);
-  std::cout << " Time to solution, " << elapsed.count() << "[s], "
-            << gflops(strassen_flops(size), elapsed.count())
+  auto elapsed = std::chrono::duration<float, std::milli>(end - start);
+  std::cout << " Time to solution, " << elapsed.count() << "[ms], "
+            << gflops(strassen_flops(size), elapsed.count() / 1000)
             << ", [Flop/s], Strassen " << std::endl;
 
   print_counter("Strassen");
@@ -83,10 +88,9 @@ int main(int argc, char *argv[]) {
   start = std::chrono::system_clock::now();
   auto Cclassic = classic(A, B, bls);
   end = std::chrono::system_clock::now();
-  elapsed =
-      std::chrono::duration<float, std::chrono::seconds::period>(end - start);
-  std::cout << " Time to solution, " << elapsed.count() << "[s], "
-            << gflops(classical_flops(size), elapsed.count())
+  elapsed = std::chrono::duration<float, std::milli>(end - start);
+  std::cout << " Time to solution, " << elapsed.count() << "[ms], "
+            << gflops(classical_flops(size), elapsed.count() / 1000)
             << ", [Flop/s], Classic " << std::endl;
 
   print_counter("Classic");
@@ -101,9 +105,12 @@ int main(int argc, char *argv[]) {
   else
     std::cout << " It does not works !\n";
 
-  b = (DD == Dclassic);
+  b = (Dclassic == AgreC);
   if (b)
     std::cout << " Classic works !\n";
   else
     std::cout << " It does not works !\n";
+
+  //  std::cout << Dclassic << std::endl;
+  //  std::cout << AgreC << std::endl;
 }

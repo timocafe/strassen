@@ -263,9 +263,13 @@ inline void mul_matrix_cpu(matrix<T> &mC, const matrix<T> &mA,
   using const_eigen_matrix_type =
       const Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic,
                           Eigen::ColMajor>;
+  auto start = std::chrono::system_clock::now();
   Eigen::Map<eigen_matrix_type>(mC.data(), mC.rows(), mC.cols()) =
       Eigen::Map<const_eigen_matrix_type>(mA.data(), mA.rows(), mA.cols()) *
       Eigen::Map<const_eigen_matrix_type>(mB.data(), mB.rows(), mB.cols());
+  auto end = std::chrono::system_clock::now();
+  auto elapsed = std::chrono::duration<float, std::milli>(end - start);
+  time_mul_cpu = time_mul_cpu + elapsed.count();
 }
 
 template <class T>
