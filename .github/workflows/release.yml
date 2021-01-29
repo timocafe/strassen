@@ -31,6 +31,5 @@ jobs:
       uses: EnricoMi/publish-unit-test-result-action@v1.7
       if: always()
       with:
-        working-directory: ${{github.workspace}}/build
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        files: Testing/**/Test.xml
+        files: build/Testing/**/Test.xml
