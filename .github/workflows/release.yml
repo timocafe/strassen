@@ -32,4 +32,4 @@ jobs:
       if: always()
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        files: Testing/**/Test.xml
+        files: build/Testing/**/Test.xml
