@@ -82,9 +82,11 @@ auto classic(const tile_matrix<T> &A, const tile_matrix<T> &B,
   const uint32_t k = A.rows() / 2;
   if (lbs == n) // limit blocksize end of the recursive process
     return std::move(mul(A, B));
-  // allocate new tile matrices twice smaller
-  tile_matrix<T> A11(k, k, lbs);
-  tile_matrix<T> B11(k, k, lbs);
+  tile_matrix<T> C(n, n, lbs);
+  // allocate new tile matrices twice smaller, not allocated
+  // move will do the job
+  tile_matrix<T> A11(k, k, lbs, false);
+  tile_matrix<T> B11(k, k, lbs, false);
   …
   // middle tile
   const uint32_t mt = A.tile_rows() / 2;
@@ -93,20 +95,17 @@ auto classic(const tile_matrix<T> &A, const tile_matrix<T> &B,
   copy_block(A11, A, 0, 0); 
   copy_block(B11, B, 0, 0);
 
-  // results of the recursive process
-  tile_matrix<T> M1(k, k, lbs);
-  tile_matrix<T> M5(k, k, lbs);
-
-
   // start the tasks
   tbb::task_group g;
-  // first task for M1, 7 more are needed for M2 to M8
-  g.run([&] { M1 = classic(A11, B11, lbs); });
-  …
-  // wait all taks
-  g.wait(); //
-  // recombine all matrix to get the results
-  M1 += M5;
+  g.run([&] {
+    tile_add_matrix(C, classic(A11, B11, lbs), 0, 0);
+    tile_add_matrix(C, classic(A12, B21, lbs), 0, 0);
+  });
+  ...
+  g.wait();
+
+  return std::move(C);
+
 ```
 
 The approach is similar for the [Strassen Implementation](https://github.com/timocafe/strassen/blob/main/algo/strassen.h).
@@ -140,14 +139,14 @@ The benchmark consists to perform multiple SGEMM EIGEN full threads (blue), SGEM
 Classical mix (CPU/GPU) grey and Strassen mix (CPU/GPU) orange. Results are reported in FLOPS (HPC’s metric) 
 and time to solution because the Strassen algorithm makes less « macho » flops. For clarity, only significative results are presented.
 The recursive process is performed only once, thus the tile size is equal to the original dimension divided by 2.
-The mix classical or mix Strassen show the best results for matrices size lower then 4096, beyond a pure GPU version is faster. 
+The mix classical or mix Strassen show the best results for matrices size lower then 4096, beyond a pure GPU version is faster, but not so much. 
 The noise for low value comes from the scheduler that does not reproduce the same pattern for every run. The number of CPU or GPU 
 SGEMM varies between each run. I was not able to beat the CUBLAS, however during the development I remark:
 
 <img src=https://github.com/timocafe/strassen/blob/main/images/flops.png align="center" height="318" width="410" />
 <img src="https://github.com/timocafe/strassen/blob/main/images/time.png" align="center" height="318" width="410" />
 
-* CudaMallocManaged is not stable in the asynchronous recursive multithread environment. It look likes, it is impossible to read a block of memory
+* CudaMallocManaged under Pascal is not stable in the asynchronous recursive multithread environment. It look likes, it is impossible to read block of memory concurrently 
 on the CPU and GPU simultaneously without a segfault. Therefore for the GPU, the old method is applied GPU memory buffers are [allocated](https://github.com/timocafe/strassen/blob/main/memory/matrix.h#L221),
 and a [data transfert](https://github.com/timocafe/strassen/blob/main/memory/matrix.h#L227) (here copy) is needed. It is an additional workload significative for low matrix size in the recursive process. Therefor I have lost all the advantages of the unify memory.
 
