@@ -27,3 +27,9 @@ jobs:
       run: cd build && make
     - name: Run Test
       run: cd build && ctest
+    - name: Publish Unit Test Results
+      uses: EnricoMi/publish-unit-test-result-action@v1.7
+      if: always()
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        files: Testing/**/Test.xml
