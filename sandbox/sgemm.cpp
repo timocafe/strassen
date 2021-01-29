@@ -68,6 +68,6 @@ int main(int argc, char *argv[]) {
   int size2 = v_cpu.size();
 
   for (int i = 0; i < size2; ++i)
-    std::cout << size << ", " << v_cpu[i].first << ", " << v_cpu[i].second
-              << ", " << v_gpu[i].first << ", " << v_gpu[i].second << "\n";
+    std::cout << size << ", CPU: " << v_cpu[i].first << ", " << v_cpu[i].second
+              << ", GPU: " << v_gpu[i].first << ", " << v_gpu[i].second << "\n";
 }
