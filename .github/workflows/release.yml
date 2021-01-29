@@ -28,9 +28,9 @@ jobs:
     - name: Run Test
       run: cd build && ctest --no-compress-output -T Test
     - name: Publish Unit Test Results
-      working-directory: ${{github.workspace}}/build
       uses: EnricoMi/publish-unit-test-result-action@v1.7
       if: always()
       with:
+        working-directory: ${{github.workspace}}/build
         github_token: ${{ secrets.GITHUB_TOKEN }}
         files: Testing/**/Test.xml
