@@ -12,13 +12,31 @@
 #include <tbb/task_arena.h>
 #include <tbb/task_group.h>
 
-//
-// \brief classical algo with notation wikipedia, lbs indicate the limit block
-// size to stop the reccursive algo
-//
+////
+//// \brief classical algo with notation wikipedia,
+////
 template <class T>
-auto classic(const tile_matrix<T> &A, const tile_matrix<T> &B,
-             const uint32_t lbs = 64) {
+auto classic(const tile_matrix<T> &A, const tile_matrix<T> &B) {
+  const uint32_t n = A.rows();
+  const uint32_t lbs = A.tile();
+  tile_matrix<T> C(n, n, lbs);
+  parallel_for(tbb::blocked_range<size_t>(0, A.tile_rows()),
+               [&](const tbb::blocked_range<size_t> &r) {
+                 for (size_t i = r.begin(); i != r.end(); ++i)
+                   for (int j = 0; j < B.tile_cols(); ++j)
+                     for (int k = 0; k < A.tile_cols(); ++k)
+                       fma(A.tile(i, k), B.tile(k, j), C.tile(i, j));
+               });
+  return std::move(C);
+}
+
+////
+//// \brief classical algo with notation wikipedia, lbs indicate the limit block
+//// size to stop the reccursive algo
+////
+template <class T>
+auto rclassic(const tile_matrix<T> &A, const tile_matrix<T> &B,
+              const uint32_t lbs = 64) {
   const uint32_t n = A.rows();
   const uint32_t k = A.rows() / 2;
   if (lbs == n) // limit blocksize

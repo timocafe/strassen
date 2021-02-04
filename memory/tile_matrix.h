@@ -225,6 +225,12 @@ inline auto mul(const tile_matrix<T> &mA, const tile_matrix<T> &mB) {
   return std::move(m);
 }
 
+template <class T>
+inline void mul(const tile_matrix<T> &mA, const tile_matrix<T> &mB,
+                tile_matrix<T> &mC, const uint32_t i, const uint32_t j) {
+  mul(mA.tile(0, 0), mB.tile(0, 0), mC.tile(i, j));
+}
+
 ///
 /// \brief copy block from a matrix to an other one
 ///

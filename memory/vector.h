@@ -9,9 +9,8 @@
 #pragma once
 
 #include <cassert>
-#include <iostream>
 #include <chrono>
-
+#include <iostream>
 
 #include "memory/util.h"
 
@@ -219,17 +218,12 @@ inline void sub_vector_gpu(vector<T, A> &v_y, const vector<T, A> &v_x) {
 ///
 template <class T, class A>
 inline void add_vector_cpu(vector<T, A> &v_y, const vector<T, A> &v_x) {
-  nadd_cpu += 1;
-  auto start = std::chrono::system_clock::now();
   using eigen_vector_type =
       Eigen::Matrix<T, Eigen::Dynamic, 1, Eigen::ColMajor>;
   using const_eigen_vector_type =
       const Eigen::Matrix<T, Eigen::Dynamic, 1, Eigen::ColMajor>;
   Eigen::Map<eigen_vector_type>(v_y.data(), v_y.size()) +=
       Eigen::Map<const_eigen_vector_type>(v_x.data(), v_x.size());
-  auto end = std::chrono::system_clock::now();
-  auto elapsed = std::chrono::duration<float, std::milli>(end - start);
-  time_add_cpu = time_add_cpu + elapsed.count();
 }
 
 ///
@@ -237,17 +231,12 @@ inline void add_vector_cpu(vector<T, A> &v_y, const vector<T, A> &v_x) {
 ///
 template <class T, class A>
 inline void sub_vector_cpu(vector<T, A> &v_y, const vector<T, A> &v_x) {
-  nadd_cpu += 1;
-  auto start = std::chrono::system_clock::now();
   using eigen_vector_type =
       Eigen::Matrix<T, Eigen::Dynamic, 1, Eigen::ColMajor>;
   using const_eigen_vector_type =
       const Eigen::Matrix<T, Eigen::Dynamic, 1, Eigen::ColMajor>;
   Eigen::Map<eigen_vector_type>(v_y.data(), v_y.size()) -=
       Eigen::Map<const_eigen_vector_type>(v_x.data(), v_x.size());
-  auto end = std::chrono::system_clock::now();
-  auto elapsed = std::chrono::duration<float, std::milli>(end - start);
-  time_add_cpu = time_add_cpu + elapsed.count();
 }
 
 ///

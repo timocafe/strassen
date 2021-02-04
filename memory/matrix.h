@@ -208,8 +208,8 @@ template <class T> void random_cpu(matrix<T> &m) {
 }
 #ifdef CUDA_DEVICE
 template <class T>
-inline void mul_matrix_gpu(matrix<T> &mC, const matrix<T> &mA,
-                           const matrix<T> &mB) {
+inline void mul_matrix_gpu(const matrix<T> &mA, const matrix<T> &mB,
+                           matrix<T> &mC, float beta = 0) {
   using size_type = typename matrix<T>::size_type;
   auto handle = singleton::get().cublas_handle();
 
@@ -232,7 +232,6 @@ inline void mul_matrix_gpu(matrix<T> &mC, const matrix<T> &mA,
       cudaMemcpy(pC, mC.data(), mC.memory_allocated(), cudaMemcpyHostToDevice));
 
   float alpha = 1.f;
-  float beta = 0.f;
 
   size_type lda = mA.rows();
   size_type ldb = mB.rows();
@@ -256,7 +255,6 @@ inline void mul_matrix_gpu(matrix<T> &mC, const matrix<T> &mA,
 template <class T>
 inline void mul_matrix_cpu(matrix<T> &mC, const matrix<T> &mA,
                            const matrix<T> &mB) {
-  nmul_cpu += 1;
   using value_type = T;
   using eigen_matrix_type = Eigen::Matrix<value_type, Eigen::Dynamic,
                                           Eigen::Dynamic, Eigen::ColMajor>;
@@ -267,9 +265,6 @@ inline void mul_matrix_cpu(matrix<T> &mC, const matrix<T> &mA,
   Eigen::Map<eigen_matrix_type>(mC.data(), mC.rows(), mC.cols()) =
       Eigen::Map<const_eigen_matrix_type>(mA.data(), mA.rows(), mA.cols()) *
       Eigen::Map<const_eigen_matrix_type>(mB.data(), mB.rows(), mB.cols());
-  auto end = std::chrono::system_clock::now();
-  auto elapsed = std::chrono::duration<float, std::milli>(end - start);
-  time_mul_cpu = time_mul_cpu + elapsed.count();
 }
 
 template <class T>
@@ -283,7 +278,7 @@ inline auto operator*(const matrix<T> &mA, const matrix<T> &mB) {
 
 #ifdef CUDA_DEVICE
   if (gpu_ready_.compare_exchange_strong(b, 1)) {
-    mul_matrix_gpu(mC, mA, mB);
+    mul_matrix_gpu(mA, mB, mC, 0);
     gpu_ready_ = 0;
   } else
     mul_matrix_cpu(mC, mA, mB);
@@ -291,6 +286,35 @@ inline auto operator*(const matrix<T> &mA, const matrix<T> &mB) {
   mul_matrix_cpu(mC, mA, mB);
 #endif
   return std::move(mC);
+}
+
+template <class T>
+inline void fma_cpu(const matrix<T> &mA, const matrix<T> &mB, matrix<T> &mC) {
+  using value_type = T;
+  using eigen_matrix_type = Eigen::Matrix<value_type, Eigen::Dynamic,
+                                          Eigen::Dynamic, Eigen::ColMajor>;
+  using const_eigen_matrix_type =
+      const Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic,
+                          Eigen::ColMajor>;
+  Eigen::Map<eigen_matrix_type>(mC.data(), mC.rows(), mC.cols()) +=
+      Eigen::Map<const_eigen_matrix_type>(mA.data(), mA.rows(), mA.cols()) *
+      Eigen::Map<const_eigen_matrix_type>(mB.data(), mB.rows(), mB.cols());
+}
+
+template <class T>
+inline void fma(const matrix<T> &mA, const matrix<T> &mB, matrix<T> &mC) {
+  using size_type = typename matrix<float>::size_type;
+  int b(0);
+
+#ifdef CUDA_DEVICE
+  if (gpu_ready_.compare_exchange_strong(b, 1)) {
+    mul_matrix_gpu(mA, mB, mC, 1);
+    gpu_ready_ = 0;
+  } else
+    fma_cpu(mA, mB, mC);
+#else
+  fma_cpu(mA, mB, mC);
+#endif
 }
 
 template <class T>

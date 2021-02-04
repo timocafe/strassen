@@ -30,25 +30,6 @@ float strassen_flops(float n) {
 
 float gflops(float a, float time) { return (a / time) / GIGA; }
 
-void reset_counter() {
-  nmul_cpu = 0;
-  nadd_cpu = 0;
-  nmul_gpu = 0;
-  nadd_gpu = 0;
-  time_mul_cpu = 0;
-  time_mul_cpu = 0;
-}
-
-void print_counter(std::string algo) {
-  std::cout << " Algorithm sgemm: " << algo << std::endl;
-  std::cout << " Stats CPU " << nmul_cpu << " *,  " << nadd_cpu << " + "
-            << std::endl;
-  std::cout << " Stats GPU " << nmul_gpu << " *,  " << nadd_gpu << " + "
-            << std::endl;
-  std::cout << " Time mul " << time_mul_cpu << " Time add " << time_add_cpu
-            << std::endl;
-}
-
 int main(int argc, char *argv[]) {
   std::cout << std::fixed << std::setprecision(2);
   // size of the matrix
@@ -72,8 +53,6 @@ int main(int argc, char *argv[]) {
 
   AgreC = AgreA * AgreB;
 
-  reset_counter();
-
   auto start = std::chrono::system_clock::now();
   C = strassen(A, B, bls);
   auto end = std::chrono::system_clock::now();
@@ -82,19 +61,13 @@ int main(int argc, char *argv[]) {
             << gflops(strassen_flops(size), elapsed.count() / 1000)
             << ", [Flop/s], Strassen " << std::endl;
 
-  print_counter("Strassen");
-  reset_counter();
-
   start = std::chrono::system_clock::now();
-  auto Cclassic = classic(A, B, bls);
+  auto Cclassic = classic(A, B);
   end = std::chrono::system_clock::now();
   elapsed = std::chrono::duration<float, std::milli>(end - start);
   std::cout << " Time to solution, " << elapsed.count() << "[ms], "
             << gflops(classical_flops(size), elapsed.count() / 1000)
             << ", [Flop/s], Classic " << std::endl;
-
-  print_counter("Classic");
-  reset_counter();
 
   auto DD = aggregate(C);
   auto Dclassic = aggregate(Cclassic);
