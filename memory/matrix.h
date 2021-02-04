@@ -258,6 +258,7 @@ inline void mul_matrix_gpu(const matrix<T> &mA, const matrix<T> &mB,
 template <class T>
 inline void mul_matrix_cpu(matrix<T> &mC, const matrix<T> &mA,
                            const matrix<T> &mB) {
+  nmul_cpu += 1;
   using value_type = T;
   using eigen_matrix_type = Eigen::Matrix<value_type, Eigen::Dynamic,
                                           Eigen::Dynamic, Eigen::ColMajor>;
