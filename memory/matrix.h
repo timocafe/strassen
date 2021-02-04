@@ -213,6 +213,11 @@ inline void mul_matrix_gpu(const matrix<T> &mA, const matrix<T> &mB,
   using size_type = typename matrix<T>::size_type;
   auto handle = singleton::get().cublas_handle();
 
+  if (beta == 0)
+    nmul_gpu += 1;
+  else
+    nfma_gpu += 1;
+
   static float *pA = nullptr;
   static float *pB = nullptr;
   static float *pC = nullptr;
@@ -248,8 +253,6 @@ inline void mul_matrix_gpu(const matrix<T> &mA, const matrix<T> &mB,
                                  &alpha, pA, lda, pB, ldb, &beta, pC, ldc));
   CUDA_CALL(
       cudaMemcpy(mC.data(), pC, mC.memory_allocated(), cudaMemcpyDeviceToHost));
-
-  nmul_gpu += 1;
 }
 #endif
 template <class T>
@@ -290,6 +293,7 @@ inline auto operator*(const matrix<T> &mA, const matrix<T> &mB) {
 
 template <class T>
 inline void fma_cpu(const matrix<T> &mA, const matrix<T> &mB, matrix<T> &mC) {
+  nfma_cpu += 1;
   using value_type = T;
   using eigen_matrix_type = Eigen::Matrix<value_type, Eigen::Dynamic,
                                           Eigen::Dynamic, Eigen::ColMajor>;

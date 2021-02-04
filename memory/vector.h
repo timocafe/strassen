@@ -218,6 +218,7 @@ inline void sub_vector_gpu(vector<T, A> &v_y, const vector<T, A> &v_x) {
 ///
 template <class T, class A>
 inline void add_vector_cpu(vector<T, A> &v_y, const vector<T, A> &v_x) {
+  nadd_cpu += 1;
   using eigen_vector_type =
       Eigen::Matrix<T, Eigen::Dynamic, 1, Eigen::ColMajor>;
   using const_eigen_vector_type =
@@ -231,6 +232,7 @@ inline void add_vector_cpu(vector<T, A> &v_y, const vector<T, A> &v_x) {
 ///
 template <class T, class A>
 inline void sub_vector_cpu(vector<T, A> &v_y, const vector<T, A> &v_x) {
+  nadd_cpu += 1;
   using eigen_vector_type =
       Eigen::Matrix<T, Eigen::Dynamic, 1, Eigen::ColMajor>;
   using const_eigen_vector_type =

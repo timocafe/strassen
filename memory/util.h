@@ -104,6 +104,12 @@ std::shared_ptr<singleton> singleton::singleton_ = NULL;
 
 // army of boolean for the static and the scheduling
 static std::atomic<int> gpu_ready_(0);
+static std::atomic<int> nfma_gpu(0);
+static std::atomic<int> nfma_cpu(0);
+static std::atomic<int> nmul_gpu(0);
+static std::atomic<int> nadd_gpu(0);
+static std::atomic<int> nmul_cpu(0);
+static std::atomic<int> nadd_cpu(0);
 
 static bool init_add_(false);
 static bool init_mul_(false);
