@@ -19,7 +19,7 @@ jobs:
     - name: Install gtest manually
       run: git clone https://github.com/google/googletest.git -b release-1.10.0  && cd googletest && mkdir build && cd build && cmake .. -DBUILD_GMOCK=OFF -DINSTALL_GTEST=ON && sudo make install 
     - name: Install Eigen and TBB
-      run: sudo apt-get install libtbb-dev libeigen3-dev
+      run: sudo apt-get install libtbb-dev libeigen3-dev xsltproc
     - uses: actions/checkout@v1
     - name: Configure
       run: mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release ..
