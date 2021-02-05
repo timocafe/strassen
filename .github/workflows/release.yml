@@ -28,7 +28,7 @@ jobs:
     - name: Run Test
       run: cd build && ctest --no-compress-output -T Test
     - name: Publish Unit Test Results
-      run cd build && xsltproc CTest2JUnit.xsl Testing/`head -n 1 < Testing/TAG`/Test.xml > JUnitTestResults.xml
+      run: cd build && xsltproc CTest2JUnit.xsl Testing/`head -n 1 < Testing/TAG`/Test.xml > JUnitTestResults.xml
       uses: EnricoMi/publish-unit-test-result-action@v1.7
       if: always()
       with:
