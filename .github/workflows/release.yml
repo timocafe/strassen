@@ -28,10 +28,10 @@ jobs:
     - name: Run Test
       run: cd build && ctest --no-compress-output -T Test
     - name: Generate Junit
-      run: cd build && xsltproc CTest2JUnit.xsl Testing/`head -n 1 < Testing/TAG`/Test.xml > JUnitTestResults.xml
+      run: xsltproc test/CTest2JUnit.xsl build/Testing/`head -n 1 < build/Testing/TAG`/Test.xml > JUnitTestResults.xml
     - name: Publish Unit Test Results
       uses: EnricoMi/publish-unit-test-result-action@v1.7
       if: always()
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        files: build/JUnitTestResults.xml
+        files: JUnitTestResults.xml
