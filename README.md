@@ -7,7 +7,7 @@ ship are integrated into the same socket with unify space memory. Therefor, the 
 can be overrided. 
 
 In this tiny note, I explore the possibility of a Jetson TX2 device, and the faculty to run all units simultaneously (CPU/GPU) on
-a well know example of HPC: the floating point matrix multiplication single precision: SGEMM, which is the keystone of the Deep Learning.
+a well know example of HPC: the floating point matrix multiplication single precision: SGEMM, which is the keystone of The Deep Learning.
  
 # A SGEMM needs a SGEMM ...
 
