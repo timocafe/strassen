@@ -131,6 +131,7 @@ int main(int argc, char *argv[]) {
       std::cout << " Recursive Classic does not works !\n";
 
 
-//  std::cout << Dclassic << std::endl;
-//  std::cout << AgreC << std::endl;
+  // std::cout << C << std::endl;
+  // std::cout << Dclassic << std::endl;
+  // std::cout << AgreC << std::endl;
 }
