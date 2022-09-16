@@ -70,20 +70,20 @@ auto rclassic(const tile_matrix<T> &A, const tile_matrix<T> &B,
   tbb::task_group g;
 
   g.run([&] {
-    tile_add_matrix(C, classic(A11, B11, lbs), 0, 0);
-    tile_add_matrix(C, classic(A12, B21, lbs), 0, 0);
+    tile_add_matrix(C, rclassic(A11, B11, lbs), 0, 0);
+    tile_add_matrix(C, rclassic(A12, B21, lbs), 0, 0);
   });
   g.run([&] {
-    tile_add_matrix(C, classic(A11, B12, lbs), 0, mt);
-    tile_add_matrix(C, classic(A12, B22, lbs), 0, mt);
+    tile_add_matrix(C, rclassic(A11, B12, lbs), 0, mt);
+    tile_add_matrix(C, rclassic(A12, B22, lbs), 0, mt);
   });
   g.run([&] {
-    tile_add_matrix(C, classic(A21, B11, lbs), mt, 0);
-    tile_add_matrix(C, classic(A22, B21, lbs), mt, 0);
+    tile_add_matrix(C, rclassic(A21, B11, lbs), mt, 0);
+    tile_add_matrix(C, rclassic(A22, B21, lbs), mt, 0);
   });
   g.run([&] {
-    tile_add_matrix(C, classic(A21, B12, lbs), mt, mt);
-    tile_add_matrix(C, classic(A22, B22, lbs), mt, mt);
+    tile_add_matrix(C, rclassic(A21, B12, lbs), mt, mt);
+    tile_add_matrix(C, rclassic(A22, B22, lbs), mt, mt);
   });
 
   g.wait();

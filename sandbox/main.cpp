@@ -33,6 +33,7 @@ float gflops(float a, float time) { return (a / time) / GIGA; }
 void reset_counter() {
   nmul_cpu = 0;
   nadd_cpu = 0;
+  nfma_cpu = 0;
   nmul_gpu = 0;
   nadd_gpu = 0;
   nfma_gpu = 0;
@@ -63,13 +64,13 @@ int main(int argc, char *argv[]) {
 
   random(A);
   random(B);
-  /*
+  
     auto AgreA = aggregate(A);
     auto AgreB = aggregate(B);
     auto AgreC = aggregate(C);
 
     AgreC = AgreA * AgreB;
-  */
+  
   auto start = std::chrono::system_clock::now();
   C = strassen(A, B, bls);
   auto end = std::chrono::system_clock::now();
@@ -91,22 +92,45 @@ int main(int argc, char *argv[]) {
 
   print_counter("Classic");
   reset_counter();
-  /*
+
+
+  start = std::chrono::system_clock::now();
+  auto Crclassic = rclassic(A, B,bls);
+  end = std::chrono::system_clock::now();
+  elapsed = std::chrono::duration<float, std::milli>(end - start);
+  std::cout << " Time to solution, " << elapsed.count() << "[ms], "
+            << gflops(classical_flops(size), elapsed.count() / 1000)
+            << ", [Flop/s], reccursive Classic " << std::endl;
+
+  print_counter("reccursive Classic");
+  reset_counter();
+
+
+  
     auto DD = aggregate(C);
     auto Dclassic = aggregate(Cclassic);
+    auto Drclassic = aggregate(Crclassic);
+
 
     bool b = (DD == AgreC);
     if (b)
       std::cout << " Strassen works !\n";
     else
-      std::cout << " It does not works !\n";
+      std::cout << " Strassen does not works !\n";
 
     b = (Dclassic == AgreC);
     if (b)
       std::cout << " Classic works !\n";
     else
-      std::cout << " It does not works !\n";
-  */
-  //  std::cout << Dclassic << std::endl;
-  //  std::cout << AgreC << std::endl;
+      std::cout << " Classic does not works !\n";
+
+    b = (Drclassic == AgreC);
+    if (b)
+      std::cout << " Recursive Classic works !\n";
+    else
+      std::cout << " Recursive Classic does not works !\n";
+
+
+//  std::cout << Dclassic << std::endl;
+//  std::cout << AgreC << std::endl;
 }

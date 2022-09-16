@@ -23,26 +23,26 @@ find_package(CUDA QUIET REQUIRED)
 include_directories(${CUDA_TOOLKIT_INCLUDE})
 endif()
 
-find_package(Eigen3 3.3 REQUIRED NO_MODULE)
-
 find_package(TBB )
-include_directories(${TBB_INCLUDE_DIRS})
+find_package(Eigen3 3.4 REQUIRED NO_MODULE)
 
-include(ClangFormat)
-clangformat_setup(
-  sandbox/main.cpp
-  sandbox/sgemm.cpp
-  memory/vector.h
-  memory/matrix.h
-  memory/tile_matrix.h
-  memory/util.h
-  memory/allocator.h
-  algo/strassen.h
-  algo/classic.h
-  test/test_memory_vector.cpp
-  test/test_memory_matrix.cpp
-  test/test_memory_tile_matrix.cpp
-)
+#include_directories(${TBB_INCLUDE_DIRS})
+
+#include(ClangFormat)
+#clangformat_setup(
+#  sandbox/main.cpp
+#  sandbox/sgemm.cpp
+#  memory/vector.h
+#  memory/matrix.h
+#  memory/tile_matrix.h
+#  memory/util.h
+#  memory/allocator.h
+#  algo/strassen.h
+#  algo/classic.h
+#  test/test_memory_vector.cpp
+#  test/test_memory_matrix.cpp
+#  test/test_memory_tile_matrix.cpp
+#)
 
 add_subdirectory(sandbox)
 
