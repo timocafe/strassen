@@ -24,7 +24,7 @@ include_directories(${CUDA_TOOLKIT_INCLUDE})
 endif()
 
 find_package(TBB )
-find_package(Eigen3 3.4 REQUIRED NO_MODULE)
+find_package(Eigen3)
 
 #include_directories(${TBB_INCLUDE_DIRS})
 
