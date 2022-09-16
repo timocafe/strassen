@@ -89,8 +89,8 @@ auto strassen(const tile_matrix<T> &A, const tile_matrix<T> &B,
   g.run([&] {
     tile_add_matrix(C, M1, mt, mt);
     tile_sub_matrix(C, M2, mt, mt);
-    tile_sub_matrix(C, M3, mt, mt);
-    tile_sub_matrix(C, M6, mt, mt);
+    tile_add_matrix(C, M3, mt, mt);
+    tile_add_matrix(C, M6, mt, mt);
   });
 
   g.wait();
